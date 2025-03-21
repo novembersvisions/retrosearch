@@ -42,5 +42,14 @@ def episodes_search():
     text = request.args.get("title")
     return json_search(text)
 
+@app.route("/search")
+def search():
+    query = request.args.get("query")
+    docs = data
+    tokenized_docs = [{'toks': tokenize(doc['abstract'])} for doc in docs]
+    inv_index = build_inverted_index(tokenized_docs)
+    result = search(query, docs, inv_index)
+    return flask.jsonify(result)
+
 if 'DB_NAME' not in os.environ:
     app.run(debug=True,host="0.0.0.0",port=5000)
