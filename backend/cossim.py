@@ -1,5 +1,6 @@
 
 import re
+import math
 
 def tokenize(text: str) -> list[str]:
     """Returns a list of words that make up the text.
@@ -71,3 +72,7 @@ def tf(t,text):
   """ Calculates term frequency of term ``t`` in the abstract of JSON string ``text`` """
   abstr = text['abstract']
   return abstr.count(t) / len(abstr)
+
+def idf(t,inv_index,total):
+   """ Calculates inverse document frequency of term ``t`` given the inverted index ``inv_index`` and total number of texts ``total``. """
+   return math.log(total / len(inv_index[t]))
