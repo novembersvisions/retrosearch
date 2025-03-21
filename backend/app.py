@@ -19,29 +19,9 @@ json_file_path = os.path.join(current_directory, 'init.json')
 # Assuming your JSON data is stored in a file named 'init.json'
 with open(json_file_path, 'r') as file:
     data = json.load(file)
-    episodes_df = pd.DataFrame(data['episodes'])
-    reviews_df = pd.DataFrame(data['reviews'])
 
 app = Flask(__name__)
 CORS(app)
-
-# Sample search using json with pandas
-def json_search(query):
-    matches = []
-    merged_df = pd.merge(episodes_df, reviews_df, left_on='id', right_on='id', how='inner')
-    matches = merged_df[merged_df['title'].str.lower().str.contains(query.lower())]
-    matches_filtered = matches[['title', 'descr', 'imdb_rating']]
-    matches_filtered_json = matches_filtered.to_json(orient='records')
-    return matches_filtered_json
-
-@app.route("/")
-def home():
-    return render_template('base.html',title="sample html")
-
-@app.route("/episodes")
-def episodes_search():
-    text = request.args.get("title")
-    return json_search(text)
 
 @app.route("/search")
 def search():
@@ -49,7 +29,7 @@ def search():
     docs = data
     tokenized_docs = [{'toks': cos.tokenize(doc['abstract'])} for doc in docs]
     inv_index = cos.build_inverted_index(tokenized_docs)
-    result = search(query, docs, inv_index)
+    result = cos.search(query, docs, inv_index)
     return Flask.jsonify(result)
 
 if 'DB_NAME' not in os.environ:
