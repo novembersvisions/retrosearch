@@ -86,7 +86,7 @@ def tf_idf(inv_index, docs):
     tokens = tokenize(doc['abstract'])
     for term in set(tokens):
       tf_val = tf(term, doc)
-      idf_val = idf(term, inv_index, numdocs)
+      idf_val = idf(term, inv_index, num_docs)
       tfidf_matrix[doc_id][term] = tf_val * idf_val
   return tfidf_matrix
 
@@ -100,8 +100,8 @@ def cossim(a, b):
 def search (query, docs, inv_index):
   """Finds the five most relevant research papers based on a query and the 
   abstracts of those papers using TF-IDF and cosine similarity."""
-  numdocs = = len(docs)
-  tfidf_matrix = tfidf(inv_index, docs)
+  numdocs = len(docs)
+  tfidf_matrix = tf_idf(inv_index, docs)
   tokenize_query = tokenize(query)
   query_tfidf = {term: tf(term, {"abstract": query}) * idf(term, inv_index, numdocs) for term in tokenize_query}
   sim_scores = [(docs[doc_id]['title'], cossim(query_tfidf, doc_tfidf)) for doc_id, doc_tfidf in tfidf_matrix.items()]
