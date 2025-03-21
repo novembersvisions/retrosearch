@@ -76,3 +76,35 @@ def tf(t,text):
 def idf(t,inv_index,total):
    """ Calculates inverse document frequency of term ``t`` given the inverted index ``inv_index`` and total number of texts ``total``. """
    return math.log(total / len(inv_index[t]))
+
+def tf_idf(inv_index, docs):
+  """Calculates tf-idf for all documents"""
+  num_docs = len(docs)
+  tfidf_matrix = {}
+  for doc_id, doc in enumerate(docs):
+    tfidf_matrix[doc_id] = {}
+    tokens = tokenize(doc['abstract'])
+    for term in set(tokens):
+      tf_val = tf(term, doc)
+      idf_val = idf(term, inv_index, numdocs)
+      tfidf_matrix[doc_id][term] = tf_val * idf_val
+  return tfidf_matrix
+
+def cossim(a, b):
+  """Computes cosine similarity between two TF-IDF vectors."""
+  dotprod = sum(a.get(term, 0) * b.get(term, 0) for term in set(a.keys()).union(b.keys()))
+  norm_a =  math.sqrt(sum(i ** 2 for i in a.values()))
+  norm_b = math.sqrt(sum(i ** 2 for i in b.values()))
+  return dotprod / (norm_a * norm_b) if norm_a and norm_b else 0.0
+
+def search (query, docs, inv_index):
+  """Finds the five most relevant research papers based on a query and the 
+  abstracts of those papers using TF-IDF and cosine similarity."""
+  numdocs = = len(docs)
+  tfidf_matrix = tfidf(inv_index, docs)
+  tokenize_query = tokenize(query)
+  query_tfidf = {term: tf(term, {"abstract": query}) * idf(term, inv_index, numdocs) for term in tokenize_query}
+  sim_scores = [(docs[doc_id]['title'], cossim(query_tfidf, doc_tfidf)) for doc_id, doc_tfidf in tfidf_matrix.items()]
+  rank = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+  return rank[:5]
+
