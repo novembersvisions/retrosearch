@@ -23,6 +23,11 @@ with open(json_file_path, 'r') as file:
 app = Flask(__name__)
 CORS(app)
 
+@app.route("/")
+def home():
+    return render_template('base.html',title="sample html")
+
+
 @app.route("/search")
 def search():
     query = request.args.get("query")
