@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from helpers.MySQLDatabaseHandler import MySQLDatabaseHandler
 import pandas as pd
@@ -20,6 +20,11 @@ json_file_path = os.path.join(current_directory, 'init.json')
 with open(json_file_path, 'r') as file:
     data = json.load(file)
 
+for doc in data:
+    doc['toks'] = cos.tokenize(doc["abstract"])
+
+inv_index = cos.build_inverted_index(data)
+
 app = Flask(__name__)
 CORS(app)
 
@@ -31,11 +36,10 @@ def home():
 @app.route("/search")
 def search():
     query = request.args.get("query")
-    docs = data
-    tokenized_docs = [{'toks': cos.tokenize(doc['abstract'])} for doc in docs]
-    inv_index = cos.build_inverted_index(tokenized_docs)
-    result = cos.search(query, docs, inv_index)
-    return Flask.jsonify(result)
+    if not query:
+        return jsonify([])
+    result = cos.search(query, data, inv_index)
+    return jsonify(result)
 
 if 'DB_NAME' not in os.environ:
     app.run(debug=True,host="0.0.0.0",port=5000)
