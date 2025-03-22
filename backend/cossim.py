@@ -75,8 +75,12 @@ def tf(t,text):
 
 def idf(t,inv_index,total):
    """ Calculates inverse document frequency of term ``t`` given the inverted index ``inv_index`` and total number of texts ``total``. """
-   return math.log(total / len(inv_index[t]))
+   if t in inv_index:  
+    return math.log(total / len(inv_index[t]))
+   else:
+     return math.log(total / 1)
 
+ 
 def tf_idf(inv_index, docs):
   """Calculates tf-idf for all documents"""
   num_docs = len(docs)
