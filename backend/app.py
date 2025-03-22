@@ -13,7 +13,6 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 # Specify the path to the JSON file relative to the current script
 json_file_path = os.path.join(current_directory, 'init.json')
 
-# Add proper error handling for JSON loading
 try:
     print(f"Loading JSON from: {json_file_path}")
     with open(json_file_path, 'r', encoding='utf-8') as file:
@@ -25,37 +24,21 @@ try:
         print("First entry keys:", list(data[0].keys()))
 except Exception as e:
     print(f"Error loading JSON: {str(e)}")
-    # Fallback to hardcoded dataset if file can't be loaded
-    data = [
-        {
-            "title": "Attention Is All You Need",
-            "abstract": "This seminal work introduces the Transformer model—a novel architecture based solely on attention mechanisms that eliminates recurrence and convolutions.",
-            "link": "https://arxiv.org/pdf/1706.03762.pdf"
-        }
-    ]
-    print("Using fallback dataset")
 
-# Process the tokenization with error handling
+# Process the tokenization
 try:
     for doc in data:
         doc['toks'] = cos.tokenize(doc["abstract"])
     print("Tokenization successful")
 except Exception as e:
     print(f"Error during tokenization: {str(e)}")
-    # Simple fallback tokenization
-    for doc in data:
-        doc['toks'] = doc["abstract"].lower().split()
-    print("Using fallback tokenization")
 
-# Build inverted index with error handling
+# Build inverted index
 try:
     inv_index = cos.build_inverted_index(data)
     print("Successfully built inverted index")
 except Exception as e:
     print(f"Error building inverted index: {str(e)}")
-    # Simple fallback inverted index
-    inv_index = {}
-    print("Using fallback inverted index")
 
 app = Flask(__name__)
 CORS(app)
@@ -79,9 +62,6 @@ def search():
             print("First result keys:", list(result[0].keys()))
     except Exception as e:
         print(f"Error during search: {str(e)}")
-        # Simple fallback search that returns all data for any query
-        result = data
-        print(f"Fallback search returned {len(result)} results")
     
     return jsonify(result)
 

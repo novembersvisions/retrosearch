@@ -14,7 +14,6 @@
                 <img src="{{ url_for('static', filename='images/mag.png') }}" />
                 <input placeholder="Search for AI research papers..." id="filter-text-val">
             </div>
-            <button onclick="filterText()" class="search-button">Search</button>
         </div>
         <div id="answer-box">
             <!-- Search results will appear here -->
@@ -22,12 +21,26 @@
     </div>
 
     <script>
-        // Add event listener for pressing Enter in the search box
-        document.getElementById("filter-text-val").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                filterText();
-            }
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('filter-text-val');
+            
+            const debouncedSearch = debounce(filterText, 300);
+            
+            searchInput.addEventListener('input', debouncedSearch);
+            
+            sendFocus();
         });
 
         function sendFocus(){
@@ -40,11 +53,11 @@
             
             if (!query) return; // Don't search if query is empty
             
-            console.log("Searching for:", query);
-            
-            // Show loading indicator
-            document.getElementById("answer-box").innerHTML = 
-                "<div class='loading'>Searching...</div>";
+            // Show small loading indicator
+            const loadingIndicator = document.createElement("div");
+            loadingIndicator.className = "loading";
+            loadingIndicator.textContent = "Searching...";
+            document.getElementById("answer-box").appendChild(loadingIndicator);
             
             fetch("/search?" + new URLSearchParams({ query: query }).toString())
             .then(response => {
@@ -54,8 +67,6 @@
                 return response.json();
             })
             .then(data => {
-                console.log("Search results:", data);
-                
                 // Clear the loading indicator
                 document.getElementById("answer-box").innerHTML = "";
                 
@@ -66,8 +77,6 @@
                 }
                 
                 data.forEach(item => {
-                    console.log("Processing item:", item);
-                    
                     const resultDiv = document.createElement("div");
                     resultDiv.className = "result-item";
                     

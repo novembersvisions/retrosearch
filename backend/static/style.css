@@ -20,11 +20,11 @@
 }
 
 #re-text {
-    color: #8B0000; /* Dark red color for "Re" */
+    color: #8B0000; 
 }
 
 #search-text {
-    color: #000000; /* Black color for "Search" */
+    color: #000000;
 }
 
 .input-box{
@@ -57,22 +57,6 @@
     outline: 0;
 }
 
-.search-button {
-    margin-top: 15px;
-    padding: 8px 24px;
-    background-color: #8B0000;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.search-button:hover {
-    background-color: #660000;
-}
-
 #answer-box{
     width: 700px;
     margin-top:30px;
@@ -86,6 +70,18 @@
     border-radius: 8px;
     background-color: #f9f9f9;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+    animation: fadeIn 0.5s;
+}
+
+.result-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .paper-title {
@@ -121,6 +117,7 @@
     padding: 20px;
     color: #666;
     font-family: 'Montserrat', sans-serif;
+    animation: fadeIn 0.5s;
 }
 
 .error {
@@ -130,11 +127,20 @@
     font-family: 'Montserrat', sans-serif;
     background-color: #f8d7da;
     border-radius: 8px;
+    animation: fadeIn 0.5s;
 }
 
 .loading {
     text-align: center;
-    padding: 20px;
+    padding: 10px;
     color: #333;
+    font-size: 14px;
     font-family: 'Montserrat', sans-serif;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
