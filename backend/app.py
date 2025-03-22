@@ -31,7 +31,7 @@ CORS(app)
 def home():
     return render_template('base.html',title="sample html")
 
-@app.route("/search")
+@app.route("/episodes")
 def search():
     query = request.args.get("query", "")
     if not query:
