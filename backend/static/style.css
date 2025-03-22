@@ -12,40 +12,19 @@
     flex-direction: column;
 }
 
-#google-c{
-    color:#4285F4;
-}
-
-#google-s{
-    color:#DB4437;
-}
-
-#google-4{
-    color:	#F4B400;
-}
-
-#google-3{
-    color:	#4285F4;
-}
-
-#google-0-1{
-    color:	#0F9D58;
-}
-
-#google-0-2{
-    color:#DB4437;
-}
-
-.google-colors{
-    display: flex;
-    align-items: center;
-    font-size: 48px;
+.research-title {
+    font-size: 64px;
+    font-weight: bold;
+    margin-bottom: 20px;
     font-family: 'Open Sans', sans-serif;
 }
 
-.google-colors h1{
-    margin-bottom: 0;
-    margin-right: 3px;
+#re-text {
+    color: #8B0000; /* Dark red color for "Re" */
+}
+
+#search-text {
+    color: #000000; /* Black color for "Search" */
 }
 
 .input-box{
@@ -67,6 +46,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-top: 100px;
 }
 
 .input-box input{
@@ -77,15 +57,84 @@
     outline: 0;
 }
 
+.search-button {
+    margin-top: 15px;
+    padding: 8px 24px;
+    background-color: #8B0000;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.search-button:hover {
+    background-color: #660000;
+}
+
 #answer-box{
     width: 700px;
-    margin-top:50px; 
+    margin-top:30px;
+    max-height: 500px;
+    overflow-y: auto;
 }
 
-.episode-title{
+.result-item {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.paper-title {
     font-family: 'Kanit', sans-serif;
+    margin-bottom: 8px;
+    color: #333;
 }
 
-.episode-desc{
+.abstract {
+    font-family: 'Montserrat', sans-serif;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.paper-link {
+    display: inline-block;
+    color: #fff;
+    background-color: #8B0000;
+    padding: 6px 12px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.paper-link:hover {
+    background-color: #660000;
+}
+
+.no-results {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.error {
+    text-align: center;
+    padding: 20px;
+    color: #8B0000;
+    font-family: 'Montserrat', sans-serif;
+    background-color: #f8d7da;
+    border-radius: 8px;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #333;
     font-family: 'Montserrat', sans-serif;
 }
