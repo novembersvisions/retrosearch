@@ -3,7 +3,6 @@ import os
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 from helpers.MySQLDatabaseHandler import MySQLDatabaseHandler
-import pandas as pd
 import cossim as cos
 
 # ROOT_PATH for linking with all your files. 
@@ -32,12 +31,12 @@ CORS(app)
 def home():
     return render_template('base.html',title="sample html")
 
-
 @app.route("/search")
 def search():
-    query = request.args.get("query")
+    query = request.args.get("query", "")
     if not query:
         return jsonify([])
+    
     result = cos.search(query, data, inv_index)
     return jsonify(result)
 
