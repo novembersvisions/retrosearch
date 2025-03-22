@@ -33,11 +33,10 @@ def home():
 
 @app.route("/search")
 def search():
-    query = text = request.args.get("title")
+    query = request.args.get("query", "")
     if not query:
         return jsonify([])
     
-    print(f"Searching for: {query}")
     
     result = cos.search(query, data, inv_index)
     return jsonify(result)
