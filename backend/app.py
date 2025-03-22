@@ -33,7 +33,7 @@ def home():
 
 @app.route("/episodes")
 def search():
-    query = request.args.get("query", "")
+    query = text = request.args.get("title")
     if not query:
         return jsonify([])
     
