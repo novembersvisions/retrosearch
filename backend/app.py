@@ -37,6 +37,8 @@ def search():
     if not query:
         return jsonify([])
     
+    print(f"Searching for: {query}")
+    
     result = cos.search(query, data, inv_index)
     return jsonify(result)
 
