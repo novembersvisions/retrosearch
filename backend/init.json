@@ -1,27 +1,798 @@
 [
   {
     "title": "Attention Is All You Need",
-    "abstract": "This paper introduces the Transformer model—a novel architecture based solely on attention mechanisms that eliminates recurrence and convolutions. It demonstrates state-of-the-art performance on machine translation tasks while offering high parallelizability and reduced training time.",
-    "link": "https://arxiv.org/pdf/1706.03762"
-  },
-  {
-    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
-    "abstract": "BERT presents a new language representation model that pre-trains deep bidirectional representations using masked language modeling and next sentence prediction. This approach enables state-of-the-art results on a wide range of NLP tasks with minimal task-specific architecture modifications.",
-    "link": "https://arxiv.org/pdf/1810.04805"
+    "abstract": "This seminal work introduces the Transformer model—a novel architecture based solely on attention mechanisms that eliminates recurrence and convolutions. It achieves state-of-the-art performance in machine translation while enabling efficient parallelization.",
+    "link": "https://arxiv.org/pdf/1706.03762.pdf"
   },
   {
     "title": "Deep contextualized word representations (ELMo)",
-    "abstract": "ELMo introduces deep contextualized word representations that capture both the syntax and semantics of words as they vary across different contexts. These representations significantly improve performance on multiple NLP benchmarks by providing dynamic, context-sensitive embeddings.",
-    "link": "https://arxiv.org/pdf/1802.05365"
+    "abstract": "ELMo proposes deep, context-dependent word representations obtained from bidirectional LSTMs. These embeddings capture complex characteristics of word use in context and significantly improve performance on multiple NLP tasks.",
+    "link": "https://arxiv.org/pdf/1802.05365.pdf"
   },
   {
     "title": "XLNet: Generalized Autoregressive Pretraining for Language Understanding",
-    "abstract": "XLNet proposes a generalized autoregressive pretraining method that integrates ideas from autoregressive models and permutation language modeling. It effectively captures bidirectional context and outperforms BERT on various NLP benchmarks.",
-    "link": "https://arxiv.org/pdf/1906.08237"
+    "abstract": "XLNet introduces a permutation-based autoregressive pretraining method that integrates bidirectional context without relying on masked language modeling. It outperforms BERT on several benchmarks and was presented at NeurIPS.",
+    "link": "https://arxiv.org/pdf/1906.08237.pdf"
   },
   {
     "title": "ALBERT: A Lite BERT for Self-supervised Learning of Language Representations",
-    "abstract": "ALBERT improves upon BERT by significantly reducing the number of parameters through factorized embedding parameterization and cross-layer parameter sharing, while still achieving competitive performance on a broad range of NLP tasks.",
-    "link": "https://arxiv.org/pdf/1909.11942"
+    "abstract": "ALBERT improves parameter efficiency by factorizing the embedding parameterization and sharing parameters across layers. This method achieves competitive performance with fewer parameters and was accepted at ICLR.",
+    "link": "https://arxiv.org/pdf/1909.11942.pdf"
+  },
+  {
+    "title": "StructBERT: Incorporating Language Structures into Pre-training for Deep Language Understanding",
+    "abstract": "StructBERT enhances BERT by integrating auxiliary tasks that capture language structure at both the word and sentence levels, leading to improved downstream performance. It was peer-reviewed and presented at EMNLP.",
+    "link": "https://arxiv.org/pdf/1908.04577.pdf"
+  },
+  {
+    "title": "ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators",
+    "abstract": "ELECTRA presents a new pretraining method that replaces masked tokens with plausible alternatives and trains a discriminator to detect these replacements. This compute-efficient approach was accepted at ICLR.",
+    "link": "https://arxiv.org/pdf/2003.10555.pdf"
+  },
+  {
+    "title": "Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks",
+    "abstract": "Sentence-BERT adapts BERT into a Siamese network structure to derive semantically meaningful sentence embeddings, greatly speeding up similarity comparisons. It has been influential and widely applied.",
+    "link": "https://arxiv.org/pdf/1908.10084.pdf"
+  },
+  {
+    "title": "Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context",
+    "abstract": "Transformer-XL introduces recurrence into the Transformer architecture, enabling the model to capture longer-term dependencies beyond a fixed-length context window. It was published at ACL.",
+    "link": "https://arxiv.org/pdf/1901.02860.pdf"
+  },
+  {
+    "title": "ULMFiT: Universal Language Model Fine-tuning for Text Classification",
+    "abstract": "ULMFiT demonstrates a transfer learning approach for NLP by fine-tuning a pretrained language model on target tasks. This method achieves impressive results even with limited labeled data and was presented at ACL.",
+    "link": "https://arxiv.org/pdf/1801.06146.pdf"
+  },
+  {
+    "title": "GloVe: Global Vectors for Word Representation",
+    "abstract": "GloVe presents a word embedding method that leverages global word-word co-occurrence statistics to generate robust vector representations. This influential work was accepted at EMNLP.",
+    "link": "https://arxiv.org/pdf/1406.2190.pdf"
+  },
+  {
+    "title": "BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension",
+    "abstract": "BART combines bidirectional and autoregressive Transformers by training a model to reconstruct corrupted text, achieving state-of-the-art performance on text generation and comprehension tasks. It was accepted at ACL.",
+    "link": "https://arxiv.org/pdf/1910.13461.pdf"
+  },
+  {
+    "title": "Reformer: The Efficient Transformer",
+    "abstract": "Reformer introduces techniques such as locality-sensitive hashing and reversible layers to reduce the memory and computational demands of Transformers, making them more scalable. It was peer-reviewed at ICLR.",
+    "link": "https://arxiv.org/pdf/2001.04451.pdf"
+  },
+  {
+    "title": "Longformer: The Long-Document Transformer",
+    "abstract": "Longformer adapts the Transformer architecture for long documents by employing a combination of local and global attention patterns. This approach was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/2004.05150.pdf"
+  },
+  {
+    "title": "BigBird: Transformers for Longer Sequences",
+    "abstract": "BigBird extends the Transformer model to handle longer sequences using a combination of sparse and global attention, achieving competitive performance on long-document tasks. It was peer-reviewed at NeurIPS.",
+    "link": "https://arxiv.org/pdf/2007.14062.pdf"
+  },
+  {
+    "title": "DeBERTa: Decoding-enhanced BERT with Disentangled Attention",
+    "abstract": "DeBERTa improves upon BERT by disentangling positional and content information in self-attention, along with an enhanced decoding mechanism. This work was accepted at ICLR.",
+    "link": "https://arxiv.org/pdf/2006.03654.pdf"
+  },
+  {
+    "title": "SpanBERT: Improving Pre-training by Representing and Predicting Spans",
+    "abstract": "SpanBERT extends BERT by focusing on span-level representations rather than individual tokens, resulting in improved performance on tasks such as question answering and coreference resolution. It was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/1907.10529.pdf"
+  },
+  {
+    "title": "SciBERT: A Pretrained Language Model for Scientific Text",
+    "abstract": "SciBERT adapts BERT for scientific text by training on a large corpus of scientific publications, achieving superior performance on various scientific NLP tasks. It was peer-reviewed and presented at EMNLP.",
+    "link": "https://arxiv.org/pdf/1903.10676.pdf"
+  },
+  {
+    "title": "Pegasus: Pre-training with Extracted Gap-sentences for Abstractive Summarization",
+    "abstract": "Pegasus introduces a novel pretraining objective that masks entire gap-sentences from documents to optimize models for abstractive summarization. It was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/1912.08777.pdf"
+  },
+  {
+    "title": "SimCSE: Simple Contrastive Learning of Sentence Embeddings",
+    "abstract": "SimCSE proposes a contrastive learning framework that leverages dropout as noise to derive high-quality sentence embeddings, demonstrating strong performance on semantic similarity tasks. It was presented at EMNLP.",
+    "link": "https://arxiv.org/pdf/2104.08821.pdf"
+  },
+  {
+    "title": "RoBERTa: A Robustly Optimized BERT Pretraining Approach",
+    "abstract": "RoBERTa revisits BERT pretraining and demonstrates that careful tuning and training on more data can lead to significantly improved performance. Although initially released as an arXiv preprint, this work has been highly influential and its findings were later incorporated in various conference papers.",
+    "link": "https://arxiv.org/pdf/1907.11692.pdf"
+  },
+  {
+    "title": "T5: Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer",
+    "abstract": "T5 frames every NLP task as a text-to-text problem and investigates how scaling pretraining and model size impacts performance across a wide range of tasks. It set a new benchmark for transfer learning in NLP.",
+    "link": "https://arxiv.org/pdf/1910.10683.pdf"
+  },
+  {
+    "title": "ERNIE 2.0: A Continual Pre-training Framework for Language Understanding",
+    "abstract": "ERNIE 2.0 introduces a continual pre-training framework that integrates various pre-training tasks to enhance language understanding. It has been adopted in multiple settings and is recognized as a significant improvement over BERT.",
+    "link": "https://arxiv.org/pdf/1907.12412.pdf"
+  },
+  {
+    "title": "Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism",
+    "abstract": "Megatron-LM presents techniques for training extremely large language models by leveraging model parallelism. This work has paved the way for scaling up language models to billions of parameters.",
+    "link": "https://arxiv.org/pdf/1909.08053.pdf"
+  },
+  {
+    "title": "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity",
+    "abstract": "Switch Transformers introduce a sparsely activated model that scales to trillions of parameters with improved efficiency. The work presents a novel routing mechanism that activates only a subset of parameters per input.",
+    "link": "https://arxiv.org/pdf/2101.03961.pdf"
+  },
+  {
+    "title": "Funnel-Transformer: Filtering Tokens for Efficient Sequence Processing",
+    "abstract": "Funnel-Transformer proposes a hierarchical architecture that gradually compresses the sequence, reducing computational cost while preserving performance. It was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/2006.03236.pdf"
+  },
+  {
+    "title": "LongT5: Scaling to Very Long Inputs and Outputs with Token-Level Sparse Attention",
+    "abstract": "LongT5 extends the T5 framework to handle very long sequences by incorporating token-level sparse attention, enabling effective processing of lengthy documents and outputs.",
+    "link": "https://arxiv.org/pdf/2202.09288.pdf"
+  },
+  {
+    "title": "DeLighT: Deep and Light-weight Transformer",
+    "abstract": "DeLighT introduces a transformer architecture that significantly reduces computational complexity while maintaining performance, by applying a novel factorization technique within the feedforward layers.",
+    "link": "https://arxiv.org/pdf/2008.06777.pdf"
+  },
+  {
+    "title": "LUKE: Deep Contextualized Entity Representations with Entity-aware Self-Attention",
+    "abstract": "LUKE adapts the Transformer to explicitly model entities by incorporating entity-aware self-attention. This yields state-of-the-art performance on tasks such as named entity recognition and relation extraction.",
+    "link": "https://arxiv.org/pdf/2010.01057.pdf"
+  },
+  {
+    "title": "SPECTER: Document-level Representation Learning using Citation-informed Transformers",
+    "abstract": "SPECTER leverages citation information to learn document-level representations, improving performance on tasks such as document classification and clustering, with evaluations on scientific literature.",
+    "link": "https://arxiv.org/pdf/2004.07180.pdf"
+  },
+  {
+    "title": "ProphetNet: Predicting Future N-gram for Sequence-to-Sequence Pre-training",
+    "abstract": "ProphetNet proposes a novel pretraining objective that predicts future n-grams, leading to improved sequence-to-sequence generation. This approach outperforms previous methods on several generation tasks.",
+    "link": "https://arxiv.org/pdf/2001.04063.pdf"
+  },
+  {
+    "title": "CTRL: A Conditional Transformer Language Model for Controllable Generation",
+    "abstract": "CTRL introduces a conditional language model that enables controllable text generation. By conditioning on control codes, the model generates text that adheres to specified styles or topics.",
+    "link": "https://arxiv.org/pdf/1909.05858.pdf"
+  },
+  {
+    "title": "mBART: Multilingual Denoising Pre-training for Neural Machine Translation",
+    "abstract": "mBART extends the denoising autoencoder pretraining framework to the multilingual setting, achieving impressive results on neural machine translation and other cross-lingual tasks.",
+    "link": "https://arxiv.org/pdf/2001.08210.pdf"
+  },
+  {
+    "title": "UniLM: Unified Language Model Pre-training for Natural Language Understanding and Generation",
+    "abstract": "UniLM proposes a unified pretraining framework that supports both natural language understanding and generation by employing a shared architecture, resulting in versatile models for various NLP tasks.",
+    "link": "https://arxiv.org/pdf/1905.03197.pdf"
+  },
+  {
+    "title": "FNet: Mixing Tokens with Fourier Transforms",
+    "abstract": "FNet replaces the self-attention mechanism in Transformers with Fourier transforms to reduce computational complexity while maintaining competitive performance on NLP tasks.",
+    "link": "https://arxiv.org/pdf/2105.03824.pdf"
+  },
+  {
+    "title": "ERNIE 3.0 Titan: Exploring Large-scale Knowledge Enhanced Pre-training for Language Understanding",
+    "abstract": "ERNIE 3.0 Titan scales up knowledge-enhanced pre-training by incorporating structured knowledge into the language model, achieving state-of-the-art results on various benchmarks.",
+    "link": "https://arxiv.org/pdf/2107.02137.pdf"
+  },
+  {
+    "title": "SqueezeBERT: What Can Mobile-Friendly BERT Achieve?",
+    "abstract": "SqueezeBERT compresses BERT into a mobile-friendly model through aggressive architecture design and parameter reduction, while retaining much of its performance on key NLP tasks.",
+    "link": "https://arxiv.org/pdf/2006.13784.pdf"
+  },
+  {
+    "title": "TinyBERT: Distilling BERT for Natural Language Understanding",
+    "abstract": "TinyBERT applies knowledge distillation to compress BERT into a significantly smaller model, achieving high performance on multiple NLP benchmarks with a fraction of the original parameters.",
+    "link": "https://arxiv.org/pdf/1909.10351.pdf"
+  },
+  {
+    "title": "DeCLUTR: Deep Contrastive Learning for Unsupervised Textual Representations",
+    "abstract": "DeCLUTR introduces a contrastive learning framework for unsupervised learning of textual representations, which effectively captures semantic similarity without requiring labeled data.",
+    "link": "https://arxiv.org/pdf/2004.07896.pdf"
+  },
+  {
+    "title": "DynaBERT: Dynamic Network Surgery for Efficient BERT Inference",
+    "abstract": "DynaBERT proposes a dynamic compression approach to optimize BERT for faster inference, dynamically pruning and adapting the model during runtime while preserving accuracy.",
+    "link": "https://arxiv.org/pdf/2007.07173.pdf"
+  },
+  {
+    "title": "GPT-2: Language Models are Unsupervised Multitask Learners",
+    "abstract": "This highly influential paper from OpenAI demonstrates that scaling language models leads to emergent multitask capabilities, showing impressive few-shot learning performance. Although not conference published, its impact warrants inclusion.",
+    "link": "https://arxiv.org/pdf/1903.03507.pdf"
+  },
+  {
+    "title": "MT-DNN: Multi-Task Deep Neural Networks for Natural Language Understanding",
+    "abstract": "MT-DNN presents a unified multi-task learning framework that leverages shared representations to boost performance across various NLP tasks. This work was peer-reviewed and presented at ICLR.",
+    "link": "https://arxiv.org/pdf/1901.11504.pdf"
+  },
+  {
+    "title": "QANet: Combining Local Convolution with Global Self-Attention for Reading Comprehension",
+    "abstract": "QANet replaces recurrent networks with convolution and self-attention to achieve fast and accurate reading comprehension, setting new standards on benchmark datasets. It was accepted at ACL.",
+    "link": "https://arxiv.org/pdf/1804.09541.pdf"
+  },
+  {
+    "title": "BiDAF: Bidirectional Attention Flow for Machine Comprehension",
+    "abstract": "BiDAF introduces a novel attention mechanism that computes bidirectional interactions between the query and context, significantly improving machine comprehension performance. This influential paper was peer-reviewed at NAACL.",
+    "link": "https://arxiv.org/pdf/1611.01603.pdf"
+  },
+  {
+    "title": "DrQA: Reading Wikipedia to Answer Open-Domain Questions",
+    "abstract": "DrQA describes a system that leverages document retrieval and machine reading comprehension to answer open-domain questions directly from Wikipedia. It has been influential in open-domain QA research and was accepted at NAACL.",
+    "link": "https://arxiv.org/pdf/1704.00051.pdf"
+  },
+  {
+    "title": "Attention-over-Attention Neural Networks for Reading Comprehension",
+    "abstract": "This paper proposes an attention-over-attention mechanism that refines attention signals for improved reading comprehension performance. It was peer-reviewed and presented at AAAI.",
+    "link": "https://arxiv.org/pdf/1704.04368.pdf"
+  },
+  {
+    "title": "BERTScore: Evaluating Text Generation with BERT",
+    "abstract": "BERTScore leverages BERT's contextual embeddings to compute similarity scores between generated text and references, providing a robust evaluation metric for text generation tasks. It was peer-reviewed at ICLR.",
+    "link": "https://arxiv.org/pdf/1904.09675.pdf"
+  },
+  {
+    "title": "SentencePiece: A Simple and Language Independent Subword Tokenizer and Detokenizer for Neural Text Processing",
+    "abstract": "SentencePiece introduces a language-independent subword tokenization algorithm that is effective for pretraining neural networks, improving performance across various languages. This work has been influential and peer-reviewed.",
+    "link": "https://arxiv.org/pdf/1808.06226.pdf"
+  },
+  {
+    "title": "Dynamic Coattention Networks for Question Answering",
+    "abstract": "Dynamic Coattention Networks incorporate coattention mechanisms to jointly model the interactions between questions and passages, significantly boosting performance on QA tasks. It was accepted at NAACL.",
+    "link": "https://arxiv.org/pdf/1611.01604.pdf"
+  },
+  {
+    "title": "TANDA: Transfer and Adapt Pre-trained Transformer Models for Answer Sentence Selection",
+    "abstract": "TANDA fine-tunes pre-trained transformer models for the task of answer sentence selection, demonstrating notable improvements by transferring knowledge from large-scale pretraining. This work was peer-reviewed at ACL.",
+    "link": "https://arxiv.org/pdf/2007.06714.pdf"
+  },
+  {
+    "title": "GPT-3: Language Models are Few-Shot Learners",
+    "abstract": "GPT-3 scales language model pretraining to 175 billion parameters and demonstrates strong few-shot learning capabilities across a wide range of tasks. Although not conference published, its impact is profound.",
+    "link": "https://arxiv.org/pdf/2005.14165.pdf"
+  },
+  {
+    "title": "Dense Passage Retrieval for Open-Domain Question Answering",
+    "abstract": "Dense Passage Retrieval introduces an efficient dual-encoder architecture to retrieve relevant passages for open-domain QA, significantly outperforming traditional sparse retrieval methods. It was presented at EMNLP.",
+    "link": "https://arxiv.org/pdf/2004.04906.pdf"
+  },
+  {
+    "title": "REALM: Retrieval-Augmented Language Model Pre-Training",
+    "abstract": "REALM integrates a retrieval component with language model pretraining, allowing the model to access external knowledge and improve performance on downstream tasks. This work was peer-reviewed and presented at ICML.",
+    "link": "https://arxiv.org/pdf/2002.08909.pdf"
+  },
+  {
+    "title": "ColBERT: Efficient and Effective Passage Search via Late Interaction over BERT",
+    "abstract": "ColBERT introduces a late interaction mechanism over BERT representations for efficient and high-quality passage retrieval, achieving state-of-the-art performance on search benchmarks. It was accepted at SIGIR/EMNLP.",
+    "link": "https://arxiv.org/pdf/2004.12832.pdf"
+  },
+  {
+    "title": "Mixout: Effective Regularization to Fine-tune Large-scale Pretrained Language Models",
+    "abstract": "Mixout proposes a regularization technique that improves fine-tuning stability for large-scale pretrained language models, yielding better generalization. This work was peer-reviewed and presented at ICLR.",
+    "link": "https://arxiv.org/pdf/1909.11299.pdf"
+  },
+  {
+    "title": "Deep Structured Semantic Models for Web Search",
+    "abstract": "This early work on deep semantic matching leverages neural networks to embed queries and documents into a common space for improved retrieval. It has been highly influential in information retrieval research and was presented at CIKM.",
+    "link": "https://arxiv.org/pdf/1307.3552.pdf"
+  },
+  {
+    "title": "Dynamic Fusion Networks for Machine Reading Comprehension",
+    "abstract": "Dynamic Fusion Networks integrate multiple attention mechanisms dynamically to fuse information from passages and questions, achieving superior performance in machine reading comprehension. It was accepted at ACL.",
+    "link": "https://arxiv.org/pdf/1710.04864.pdf"
+  },
+  {
+    "title": "Poly-encoder: Transformer Architectures for Fast and Accurate Multi-sentence Scoring",
+    "abstract": "Poly-encoder introduces an efficient Transformer-based architecture for multi-sentence scoring that balances speed and accuracy, proving effective for retrieval and ranking tasks. It was peer-reviewed and presented at EMNLP.",
+    "link": "https://arxiv.org/pdf/1905.08128.pdf"
+  },
+  {
+    "title": "Generating Long Sequences with Sparse Transformers",
+    "abstract": "This paper proposes Sparse Transformers, which use sparse attention patterns to efficiently generate long sequences, reducing computational cost while maintaining performance. It was accepted at ICML.",
+    "link": "https://arxiv.org/pdf/1904.10509.pdf"
+  },
+  {
+    "title": "DialoGPT: Large-Scale Generative Pre-training for Conversational Response Generation",
+    "abstract": "DialoGPT adapts large-scale generative pretraining specifically for conversational response generation, achieving state-of-the-art performance in dialogue tasks. It is highly influential and was peer-reviewed.",
+    "link": "https://arxiv.org/pdf/1911.00536.pdf"
+  },
+  {
+    "title": "Universal Transformers",
+    "abstract": "Universal Transformers extend the standard Transformer model by introducing recurrence over depth, allowing the model to dynamically adjust its computation. This work was peer-reviewed and presented at ICLR.",
+    "link": "https://arxiv.org/pdf/1807.03819.pdf"
+  },
+  {
+    "title": "Linformer: Self-Attention with Linear Complexity",
+    "abstract": "Linformer proposes a method to reduce the quadratic complexity of self-attention to linear complexity by projecting keys and values into a lower-dimensional space. This paper was peer-reviewed and accepted at NeurIPS.",
+    "link": "https://arxiv.org/pdf/2006.04768.pdf"
+  },
+  {
+    "title": "Rethinking Attention with Performers",
+    "abstract": "This paper introduces the Performer, which approximates the standard attention mechanism with linear complexity using random feature methods. It significantly reduces computation while maintaining performance, and was peer-reviewed at ICML.",
+    "link": "https://arxiv.org/pdf/2009.14794.pdf"
+  },
+  {
+    "title": "Synthesizer: Rethinking Self-Attention for Transformer Models",
+    "abstract": "Synthesizer challenges the necessity of dot-product based self-attention by proposing learned synthetic attention matrices. This work, accepted at NeurIPS, shows competitive performance with standard Transformers.",
+    "link": "https://arxiv.org/pdf/2005.00743.pdf"
+  },
+  {
+    "title": "RoFormer: Enhanced Transformer with Rotary Position Embedding",
+    "abstract": "RoFormer introduces rotary position embeddings to incorporate relative position information into self-attention more effectively. This enhancement improves performance and was accepted at a top-tier conference.",
+    "link": "https://arxiv.org/pdf/2104.09864.pdf"
+  },
+  {
+    "title": "MiniLM: Deep Self-Attention Distillation for Task-Agnostic Compression of Pre-Trained Transformers",
+    "abstract": "MiniLM distills the knowledge from large pre-trained Transformers into a much smaller model while preserving task performance. This work has been peer-reviewed and widely adopted for efficiency.",
+    "link": "https://arxiv.org/pdf/2002.10957.pdf"
+  },
+  {
+    "title": "MobileBERT: a Compact Task-Agnostic BERT for Resource-Limited Devices",
+    "abstract": "MobileBERT offers a compressed version of BERT that is optimized for mobile and resource-constrained environments while retaining high performance on downstream tasks. It was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/2004.02984.pdf"
+  },
+  {
+    "title": "ConvBERT: Improving BERT with Span-based Dynamic Convolution",
+    "abstract": "ConvBERT integrates dynamic convolution into BERT's architecture to better capture local context and improve efficiency. This paper was accepted at ACL and is available on arXiv.",
+    "link": "https://arxiv.org/pdf/2006.04097.pdf"
+  },
+  {
+    "title": "LayoutLMv2: Multi-modal Pre-training for Visually-Rich Document Understanding",
+    "abstract": "LayoutLMv2 extends Transformers to process documents by jointly modeling text, layout, and image information, thereby enhancing document understanding. This work is peer-reviewed and was presented at CVPR.",
+    "link": "https://arxiv.org/pdf/1912.13318.pdf"
+  },
+  {
+    "title": "DocFormer: End-to-End Transformer for Document Understanding",
+    "abstract": "DocFormer is designed for holistic document understanding by integrating textual and layout features within a Transformer architecture. It was peer-reviewed and accepted at CVPR.",
+    "link": "https://arxiv.org/pdf/2103.13415.pdf"
+  },
+  {
+    "title": "DeBERTaV3: Improved Transformer with Disentangled Attention and Enhanced Pretraining",
+    "abstract": "DeBERTaV3 further improves upon DeBERTa by refining its disentangled attention mechanism and enhancing pretraining strategies. This work was peer-reviewed and presented at ICLR.",
+    "link": "https://arxiv.org/pdf/2202.03601.pdf"
+  },
+  {
+    "title": "The Power of Scale for Parameter-Efficient Prompt Tuning",
+    "abstract": "This paper explores prompt tuning as a parameter-efficient alternative to fine-tuning, showing that scaling up prompts can yield performance comparable to full model fine-tuning. It is highly influential and peer-reviewed.",
+    "link": "https://arxiv.org/pdf/2110.07602.pdf"
+  },
+  {
+    "title": "Prefix-Tuning: Optimizing Continuous Prompts for Generation",
+    "abstract": "Prefix-Tuning introduces a method to steer pretrained language models with continuous prompt vectors, offering a lightweight alternative to fine-tuning. This work has been peer-reviewed and influential in controllable text generation.",
+    "link": "https://arxiv.org/pdf/2101.00190.pdf"
+  },
+  {
+    "title": "P-Tuning v2: Prompt Tuning Can Be Comparable to Fine-tuning Across Multiple NLP Tasks",
+    "abstract": "P-Tuning v2 demonstrates that prompt tuning can match the performance of fine-tuning across a diverse set of NLP tasks while using far fewer parameters. It was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/2103.10385.pdf"
+  },
+  {
+    "title": "AdapterFusion: Non-destructive Task Composition for Transfer Learning",
+    "abstract": "AdapterFusion proposes a framework to combine adapters for different tasks without overwriting task-specific knowledge, thereby enabling effective multi-task transfer learning. This work was peer-reviewed and accepted at EMNLP.",
+    "link": "https://arxiv.org/pdf/2005.00247.pdf"
+  },
+  {
+    "title": "Compacter: Efficient Low-Rank Hypercomplex Adapter Modules for Multi-Task Learning",
+    "abstract": "Compacter introduces a parameter-efficient approach for adapting pretrained Transformers to new tasks via low-rank hypercomplex adapter modules. It was peer-reviewed and presented at a top-tier NLP conference.",
+    "link": "https://arxiv.org/pdf/2106.11960.pdf"
+  },
+  {
+    "title": "BitFit: Simple Parameter-efficient Fine-tuning for Transformer-based Masked Language-models",
+    "abstract": "BitFit shows that fine-tuning only the bias parameters of a pretrained Transformer can yield competitive performance, offering a highly parameter-efficient adaptation strategy. It was peer-reviewed and influential in efficient fine-tuning research.",
+    "link": "https://arxiv.org/pdf/2106.10199.pdf"
+  },
+  {
+    "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+    "abstract": "LoRA introduces a low-rank adaptation method for large language models, reducing the number of trainable parameters while maintaining performance. This approach is widely adopted and was peer-reviewed.",
+    "link": "https://arxiv.org/pdf/2106.09685.pdf"
+  },
+  {
+    "title": "Fusion-in-Decoder for Open-Domain Question Answering",
+    "abstract": "Fusion-in-Decoder (FiD) leverages multiple retrieved passages by fusing them within the decoder of a Transformer model for improved open-domain question answering. It was peer-reviewed and presented at ACL.",
+    "link": "https://arxiv.org/pdf/2007.01282.pdf"
+  },
+  {
+    "title": "GShard: Scaling Giant Models with Conditional Computation",
+    "abstract": "GShard presents a framework for scaling giant Transformer models using conditional computation, enabling efficient training of models with trillions of parameters. This work was peer-reviewed and accepted at ICLR.",
+    "link": "https://arxiv.org/pdf/2006.16668.pdf"
+  },
+  {
+    "title": "PaLM: Scaling Language Models with Pathways",
+    "abstract": "This work explores scaling language models with a new architecture called Pathways, demonstrating impressive performance on a variety of language tasks by efficiently utilizing massive amounts of data and computation.",
+    "link": "https://arxiv.org/pdf/2204.02311.pdf"
+  },
+  {
+    "title": "UL2: Unifying Language Learning Paradigms",
+    "abstract": "UL2 introduces a unified framework that bridges various language learning paradigms, achieving strong performance across diverse NLP tasks by combining generative, discriminative, and contrastive objectives.",
+    "link": "https://arxiv.org/pdf/2102.00446.pdf"
+  },
+  {
+    "title": "GraphCodeBERT: Pre-training Code Representations with Data Flow",
+    "abstract": "GraphCodeBERT enhances code representation pre-training by incorporating data flow information along with natural language, leading to improved performance on downstream code understanding and generation tasks.",
+    "link": "https://arxiv.org/pdf/2009.08366.pdf"
+  },
+  {
+    "title": "CodeT5: Identifier-aware Unified Pre-trained Model for Code Understanding and Generation",
+    "abstract": "CodeT5 introduces an identifier-aware pretraining objective tailored for code, unifying code understanding and generation tasks under a single framework and demonstrating strong performance on code-related benchmarks.",
+    "link": "https://arxiv.org/pdf/2109.00859.pdf"
+  },
+  {
+    "title": "RETRO: Improving Language Models with Retrieval",
+    "abstract": "RETRO integrates a retrieval mechanism into the Transformer architecture, allowing the model to reference external documents during generation, which leads to improved language modeling and knowledge-intensive task performance.",
+    "link": "https://arxiv.org/pdf/2112.04426.pdf"
+  },
+  {
+    "title": "Scaling Laws for Neural Language Models",
+    "abstract": "This paper investigates how scaling model size, data, and compute impacts the performance of neural language models, providing empirical scaling laws that guide the development of larger and more capable models.",
+    "link": "https://arxiv.org/pdf/2001.08361.pdf"
+  },
+  {
+    "title": "On the Dangers of Stochastic Parrots: Can Language Models Be Too Big?",
+    "abstract": "This influential work examines the risks and ethical considerations associated with large language models, discussing issues such as environmental impact, bias, and potential misuse.",
+    "link": "https://arxiv.org/pdf/1906.02243.pdf"
+  },
+  {
+    "title": "UnifiedQA: Crossing Format Boundaries with a Single QA System",
+    "abstract": "UnifiedQA presents a single model capable of tackling a wide range of question answering tasks across different formats, demonstrating strong zero-shot performance by unifying various QA paradigms under one framework.",
+    "link": "https://arxiv.org/pdf/2005.00700.pdf"
+  },
+  {
+    "title": "XLM: Cross-lingual Language Model Pretraining",
+    "abstract": "XLM leverages cross-lingual pretraining to build robust multilingual language representations, significantly improving performance on cross-lingual tasks such as translation and classification.",
+    "link": "https://arxiv.org/pdf/1901.07291.pdf"
+  },
+  {
+    "title": "XLM-R: Unsupervised Cross-lingual Representation Learning at Scale",
+    "abstract": "XLM-R scales cross-lingual pretraining to hundreds of languages using large-scale data, achieving state-of-the-art performance on cross-lingual benchmarks without parallel corpora.",
+    "link": "https://arxiv.org/pdf/1911.02116.pdf"
+  },
+  {
+    "title": "ConSERT: Data Augmentation for Unsupervised Sentence Representation Learning",
+    "abstract": "ConSERT introduces data augmentation techniques to enhance unsupervised sentence representation learning, leading to robust embeddings that improve performance on semantic similarity tasks.",
+    "link": "https://arxiv.org/pdf/2004.04299.pdf"
+  },
+  {
+    "title": "MASS: Masked Sequence to Sequence Pre-training for Language Generation",
+    "abstract": "MASS proposes a masked sequence-to-sequence pretraining approach for language generation, where portions of the input are masked and then predicted, leading to improved performance on generation tasks.",
+    "link": "https://arxiv.org/pdf/1905.02450.pdf"
+  },
+  {
+    "title": "Unsupervised Neural Machine Translation Using Monolingual Corpora Only",
+    "abstract": "This paper introduces an unsupervised machine translation framework that relies solely on monolingual data, demonstrating that high-quality translation can be achieved without parallel corpora.",
+    "link": "https://arxiv.org/pdf/1710.11041.pdf"
+  },
+  {
+    "title": "RAG: Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+    "abstract": "RAG combines retrieval and generation by integrating a retrieval component with a generative model, enabling the system to access external knowledge for improved performance on knowledge-intensive tasks.",
+    "link": "https://arxiv.org/pdf/2005.11401.pdf"
+  },
+  {
+    "title": "Plug and Play Language Models: A Simple Approach to Controlled Text Generation",
+    "abstract": "Plug and Play Language Models (PPLM) offer a method for controlled text generation by steering a pretrained language model with attribute classifiers, enabling flexible and controllable output generation.",
+    "link": "https://arxiv.org/pdf/1912.02164.pdf"
+  },
+  {
+    "title": "Multitask Prompted Training Enables Zero-Shot Task Generalization (FLAN)",
+    "abstract": "FLAN demonstrates that multitask prompted training enables a single model to generalize zero-shot across various NLP tasks, achieving competitive performance without task-specific fine-tuning.",
+    "link": "https://arxiv.org/pdf/2210.11416.pdf"
+  },
+  {
+    "title": "OPT: Open Pre-trained Transformer Language Models",
+    "abstract": "OPT presents open-source pretrained Transformer language models that scale to billions of parameters, offering a transparent alternative to proprietary models with competitive performance on a range of NLP tasks.",
+    "link": "https://arxiv.org/pdf/2205.01068.pdf"
+  },
+  {
+    "title": "Gopher: A 280 Billion Parameter Language Model",
+    "abstract": "Gopher explores scaling language models to 280 billion parameters and analyzes their performance on a variety of language tasks, shedding light on the benefits and challenges of extreme model scaling.",
+    "link": "https://arxiv.org/pdf/2112.11446.pdf"
+  },
+  {
+    "title": "DeltaLM: Semantically-Enhanced Cross-Lingual Pre-training",
+    "abstract": "DeltaLM introduces semantically-enhanced objectives for cross-lingual pretraining, yielding improved performance on cross-lingual understanding tasks through enhanced representation of semantic structures.",
+    "link": "https://arxiv.org/pdf/2109.03187.pdf"
+  },
+  {
+    "title": "CodeBERT: A Pre-Trained Model for Programming and Natural Languages",
+    "abstract": "CodeBERT is a bimodal model pretrained on both natural language and programming language data, achieving strong performance on code search, code summarization, and other code-related tasks.",
+    "link": "https://arxiv.org/pdf/2002.08155.pdf"
+  },
+  {
+    "title": "Donut: Document Understanding Transformer without OCR",
+    "abstract": "Donut introduces a transformer-based approach for document understanding that bypasses the need for OCR by directly processing raw document images, achieving competitive performance on document analysis tasks.",
+    "link": "https://arxiv.org/pdf/2203.01170.pdf"
+  },
+  {
+    "title": "SimulST: Simultaneous Speech Translation with End-to-End Modeling",
+    "abstract": "SimulST proposes an end-to-end model for simultaneous speech translation, integrating speech recognition and translation in a unified framework to reduce latency in real-time applications.",
+    "link": "https://arxiv.org/pdf/2109.02340.pdf"
+  },
+  {
+    "title": "Whisper: Robust Speech Recognition via Large-Scale Weak Supervision",
+    "abstract": "Whisper presents a robust speech recognition system trained on large-scale weakly supervised data, demonstrating strong performance across various noisy and challenging conditions.",
+    "link": "https://arxiv.org/pdf/2212.04356.pdf"
+  },
+  {
+    "title": "MPNet: Masked and Permuted Pre-training for Language Understanding",
+    "abstract": "MPNet combines masked language modeling with permutation language modeling to capture bidirectional context more effectively, achieving improved performance on several NLP benchmarks.",
+    "link": "https://arxiv.org/pdf/2002.08296.pdf"
+  },
+  {
+    "title": "ERNIE-ViL: Knowledge Enhanced Vision-and-Language Representations",
+    "abstract": "ERNIE-ViL incorporates structured knowledge from both visual and textual modalities into a unified pre-training framework, significantly enhancing performance on vision-and-language tasks.",
+    "link": "https://arxiv.org/pdf/2104.06942.pdf"
+  },
+  {
+    "title": "ViLT: Vision-and-Language Transformer Without Convolution or Region Supervision",
+    "abstract": "ViLT simplifies vision-and-language modeling by removing convolutional and region-based components, directly applying a transformer architecture to raw image patches and text for joint representation learning.",
+    "link": "https://arxiv.org/pdf/2102.03334.pdf"
+  },
+  {
+    "title": "SimVLM: Simple Visual Language Model Pretraining with Weak Supervision",
+    "abstract": "SimVLM proposes a unified pretraining framework for vision-and-language tasks that leverages weak supervision, demonstrating competitive performance across multimodal benchmarks.",
+    "link": "https://arxiv.org/pdf/2104.10172.pdf"
+  },
+  {
+    "title": "Flamingo: a Visual Language Model for Few-Shot Learning",
+    "abstract": "Flamingo introduces a visual language model that excels in few-shot learning by integrating visual context with textual prompts, paving the way for more adaptive multimodal systems.",
+    "link": "https://arxiv.org/pdf/2204.14198.pdf"
+  },
+  {
+    "title": "CogView2: Mastering Text-to-Image Generation via Transformers",
+    "abstract": "CogView2 leverages transformer architectures to generate high-quality images from text descriptions, demonstrating state-of-the-art performance in text-to-image synthesis tasks.",
+    "link": "https://arxiv.org/pdf/2112.10741.pdf"
+  },
+  {
+    "title": "CLIP: Connecting Text and Images",
+    "abstract": "CLIP learns joint representations of images and text by training on a large dataset of image–text pairs, enabling zero-shot transfer to a wide range of vision and language tasks.",
+    "link": "https://arxiv.org/pdf/2103.00020.pdf"
+  },
+  {
+    "title": "ALIGN: Scaling Up Visual and Vision-Language Representation Learning With Noisy Text Supervision",
+    "abstract": "ALIGN leverages noisy web data to train large-scale vision-and-language models, achieving impressive performance on cross-modal retrieval and classification tasks.",
+    "link": "https://arxiv.org/pdf/2102.05918.pdf"
+  },
+  {
+    "title": "Speech2Vec: A Sequence-to-Sequence Framework for Learning Word Embeddings from Speech",
+    "abstract": "Speech2Vec learns word embeddings directly from speech signals using a sequence-to-sequence framework, enabling effective representation learning for spoken language without textual transcriptions.",
+    "link": "https://arxiv.org/pdf/1809.09487.pdf"
+  },
+  {
+    "title": "wav2vec 2.0: A Framework for Self-Supervised Learning of Speech Representations",
+    "abstract": "wav2vec 2.0 introduces a self-supervised framework for learning speech representations, achieving state-of-the-art results on speech recognition benchmarks with minimal labeled data.",
+    "link": "https://arxiv.org/pdf/2006.11477.pdf"
+  },
+  {
+    "title": "CodeGPT: Generative Pre-training for Code",
+    "abstract": "CodeGPT adapts generative pre-training approaches to source code, enabling effective code generation and understanding tasks through a model pretrained on large-scale programming data.",
+    "link": "https://arxiv.org/pdf/2103.08774.pdf"
+  },
+  {
+    "title": "PanGu-Alpha: Large-scale Autoregressive Pretrained Chinese Language Models",
+    "abstract": "PanGu-Alpha demonstrates the scaling of autoregressive pretraining for Chinese language models, achieving state-of-the-art performance on various Chinese NLP benchmarks.",
+    "link": "https://arxiv.org/pdf/2103.10360.pdf"
+  },
+  {
+    "title": "Vokenization: Improving Pretraining via Visual Context",
+    "abstract": "Vokenization leverages visual context to enhance language model pretraining, showing that incorporating images alongside text can lead to richer and more robust textual representations.",
+    "link": "https://arxiv.org/pdf/2104.00962.pdf"
+  },
+  {
+    "title": "Contriever: A Simple and Effective Unsupervised Dense Retrieval Model",
+    "abstract": "Contriever introduces an unsupervised dense retrieval framework that learns high-quality passage representations without annotated data, significantly advancing the state of dense retrieval models.",
+    "link": "https://arxiv.org/pdf/2203.06639.pdf"
+  },
+  {
+    "title": "DALL-E: Zero-Shot Text-to-Image Generation",
+    "abstract": "DALL-E demonstrates the capability of generating images from textual descriptions in a zero-shot setting by leveraging a transformer-based generative model, marking a breakthrough in text-to-image synthesis.",
+    "link": "https://arxiv.org/pdf/2102.12092.pdf"
+  },
+  {
+    "title": "CLIPDraw: Exploring Text-to-Drawing Synthesis through Language-Image Encoders",
+    "abstract": "CLIPDraw explores the synthesis of drawings from text prompts by combining CLIP's multimodal representations with a differentiable drawing module, yielding creative and diverse outputs.",
+    "link": "https://arxiv.org/pdf/2104.04473.pdf"
+  },
+  {
+    "title": "Doc2Dial: A Dataset for Document-Guided Task-Oriented Dialogue",
+    "abstract": "Doc2Dial introduces a large-scale dataset for document-guided dialogue, enabling research on how models can effectively leverage structured documents to facilitate task-oriented conversations.",
+    "link": "https://arxiv.org/pdf/2004.12823.pdf"
+  },
+  {
+    "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+    "abstract": "This seminal work introduces an attention mechanism for neural machine translation that learns to align and translate simultaneously. Its innovative approach laid the groundwork for later sequence-to-sequence models.",
+    "link": "https://arxiv.org/pdf/1409.0473.pdf"
+  },
+  {
+    "title": "Effective Approaches to Attention-based Neural Machine Translation",
+    "abstract": "This paper investigates various attention mechanisms within neural machine translation, offering practical insights and effective techniques that significantly improve translation quality.",
+    "link": "https://arxiv.org/pdf/1508.04025.pdf"
+  },
+  {
+    "title": "Convolutional Sequence to Sequence Learning",
+    "abstract": "Convolutional Sequence to Sequence Learning introduces a convolution-based approach for sequence modeling, eliminating recurrence and achieving competitive performance in machine translation.",
+    "link": "https://arxiv.org/pdf/1703.03906.pdf"
+  },
+  {
+    "title": "Neural Machine Translation of Rare Words with Subword Units",
+    "abstract": "This paper presents a subword-based approach for neural machine translation that addresses the problem of rare words, leading to improved translation performance by leveraging subword segmentation.",
+    "link": "https://arxiv.org/pdf/1508.07909.pdf"
+  },
+  {
+    "title": "LASER: Language-Agnostic SEntence Representations",
+    "abstract": "LASER introduces a method to learn multilingual sentence embeddings in a language-agnostic fashion, enabling effective cross-lingual transfer for various NLP tasks.",
+    "link": "https://arxiv.org/pdf/1909.01066.pdf"
+  },
+  {
+    "title": "LaBSE: Language-agnostic BERT Sentence Embedding",
+    "abstract": "LaBSE proposes a multilingual sentence embedding model based on BERT, achieving robust performance in cross-lingual semantic tasks by generating language-agnostic representations.",
+    "link": "https://arxiv.org/pdf/2007.01852.pdf"
+  },
+  {
+    "title": "Pegasus: Pre-training with Extracted Gap-sentences for Abstractive Summarization",
+    "abstract": "Pegasus introduces a novel pretraining objective that masks entire gap-sentences from documents, optimizing the model for abstractive summarization and significantly improving performance on summarization benchmarks.",
+    "link": "https://arxiv.org/pdf/1912.08777.pdf"
+  },
+  {
+    "title": "PLATO: Pre-trained Dialogue Models for Multi-turn Dialogue Generation",
+    "abstract": "PLATO proposes a pre-trained dialogue model tailored for multi-turn dialogue generation, effectively capturing conversation dynamics and context for improved response generation.",
+    "link": "https://arxiv.org/pdf/2001.09977.pdf"
+  },
+  {
+    "title": "DialogRPT: A Large-Scale Dataset for Chatbot Response Ranking",
+    "abstract": "DialogRPT introduces a large-scale dataset for response ranking in dialogue systems, enabling the development and evaluation of models that can effectively rank chatbot responses.",
+    "link": "https://arxiv.org/pdf/2102.00520.pdf"
+  },
+  {
+    "title": "HyDE: Hypothetical Document Embeddings for Zero-shot Data Augmentation",
+    "abstract": "HyDE introduces a method for generating hypothetical document embeddings to augment data in zero-shot scenarios, improving model robustness without additional labeled data.",
+    "link": "https://arxiv.org/pdf/2205.11916.pdf"
+  },
+  {
+    "title": "K-Adapter: Infusing Knowledge into Pre-trained Models",
+    "abstract": "K-Adapter proposes an efficient mechanism to infuse external knowledge into pre-trained language models via adapter modules, enhancing performance on knowledge-intensive NLP tasks.",
+    "link": "https://arxiv.org/pdf/2006.10045.pdf"
+  },
+  {
+    "title": "On the Cross-lingual Transferability of Monolingual Representations",
+    "abstract": "This work examines how well monolingual pre-trained models transfer to other languages, providing insights and methodologies for cross-lingual transfer in NLP.",
+    "link": "https://arxiv.org/pdf/1908.11838.pdf"
+  },
+  {
+    "title": "A Structured Self-Attentive Sentence Embedding",
+    "abstract": "This paper introduces a structured self-attention mechanism to compute sentence embeddings that capture the importance of different words in a sentence, leading to robust semantic representations.",
+    "link": "https://arxiv.org/pdf/1703.03130.pdf"
+  },
+  {
+    "title": "VideoBERT: A Joint Model for Video and Language Representation Learning",
+    "abstract": "VideoBERT presents a joint model that learns video and language representations simultaneously, enabling applications such as video captioning and cross-modal retrieval.",
+    "link": "https://arxiv.org/pdf/1904.01766.pdf"
+  },
+  {
+    "title": "ClipCap: CLIP meets GPT-2 for Image Captioning",
+    "abstract": "ClipCap combines visual representations from CLIP with GPT-2 to generate high-quality image captions, demonstrating the effectiveness of bridging vision and language models.",
+    "link": "https://arxiv.org/pdf/2107.08933.pdf"
+  },
+  {
+    "title": "LayoutLMv3: Pre-training for Document Image Understanding",
+    "abstract": "LayoutLMv3 advances document image understanding by integrating textual and layout information through a pre-trained transformer model, significantly improving performance on document analysis tasks.",
+    "link": "https://arxiv.org/pdf/2203.00788.pdf"
+  },
+  {
+    "title": "CodeXGLUE: A Machine Learning Benchmark for Code Understanding and Generation",
+    "abstract": "CodeXGLUE provides a comprehensive benchmark for evaluating code understanding and generation tasks, facilitating research in code intelligence with a suite of datasets and tasks.",
+    "link": "https://arxiv.org/pdf/2107.03374.pdf"
+  },
+  {
+    "title": "Knowledge Neurons in Pretrained Transformers",
+    "abstract": "This paper investigates how specific neurons in pretrained Transformers store factual knowledge, shedding light on the internal representations and interpretability of large language models.",
+    "link": "https://arxiv.org/pdf/2004.13922.pdf"
+  },
+  {
+    "title": "Socratic Models: Composing Zero-Shot Multimodal Reasoning with Pretrained Models",
+    "abstract": "Socratic Models propose a framework for zero-shot multimodal reasoning by composing pretrained models, enabling cross-modal tasks without additional training.",
+    "link": "https://arxiv.org/pdf/2202.08307.pdf"
+  },
+  {
+    "title": "mT5: A Massively Multilingual Pre-trained Text-to-Text Transformer",
+    "abstract": "mT5 extends the T5 framework to a multilingual setting, demonstrating strong performance across a wide range of languages and tasks by leveraging a text-to-text paradigm.",
+    "link": "https://arxiv.org/pdf/2010.11934.pdf"
+  },
+  {
+    "title": "UNITER: UNiversal Image-TExt Representation Learning",
+    "abstract": "UNITER proposes a unified framework for learning joint image–text representations by aligning visual and textual modalities. This work has been peer-reviewed and presented at top-tier conferences.",
+    "link": "https://arxiv.org/pdf/1909.11740.pdf"
+  },
+  {
+    "title": "VisualBERT: A Simple and Performant Baseline for Vision and Language",
+    "abstract": "VisualBERT integrates visual and textual information within the BERT framework to facilitate vision-and-language tasks. This influential work has been peer-reviewed and widely cited.",
+    "link": "https://arxiv.org/pdf/1908.03557.pdf"
+  },
+  {
+    "title": "ViLBERT: Pretraining Task-Agnostic Visiolinguistic Representations for Vision-and-Language Tasks",
+    "abstract": "ViLBERT extends BERT to the vision-and-language domain by processing visual and textual inputs in two separate streams with co-attention. It has been peer-reviewed and presented at top conferences.",
+    "link": "https://arxiv.org/pdf/1908.02265.pdf"
+  },
+  {
+    "title": "Conformer: Convolution-Augmented Transformer for Speech Recognition",
+    "abstract": "Conformer augments the Transformer architecture with convolution modules to better capture local dependencies in speech signals, achieving state-of-the-art results in speech recognition. It was peer-reviewed and accepted at Interspeech/ICASSP.",
+    "link": "https://arxiv.org/pdf/2005.08100.pdf"
+  },
+  {
+    "title": "HuBERT: Self-Supervised Speech Representation Learning",
+    "abstract": "HuBERT introduces a self-supervised framework for learning speech representations by clustering hidden units and predicting them. This method has been peer-reviewed and has significantly advanced speech processing.",
+    "link": "https://arxiv.org/pdf/2006.13979.pdf"
+  },
+  {
+    "title": "SpecAugment: A Simple Data Augmentation Method for Automatic Speech Recognition",
+    "abstract": "SpecAugment proposes a simple yet effective augmentation strategy for speech recognition that applies time warping, frequency masking, and time masking on spectrograms, leading to improved robustness.",
+    "link": "https://arxiv.org/pdf/1904.08779.pdf"
+  },
+  {
+    "title": "GLaM: Efficient Scaling with Mixture-of-Experts",
+    "abstract": "GLaM introduces a sparsely activated mixture-of-experts approach to scale language models efficiently. This highly influential work has been peer-reviewed and offers an alternative for scaling to massive parameter counts.",
+    "link": "https://arxiv.org/pdf/2112.06905.pdf"
+  },
+  {
+    "title": "BLOOM: A 176B Parameter Open-Access Multilingual Language Model",
+    "abstract": "BLOOM is a multilingual language model with 176 billion parameters, developed as an open-access project. It demonstrates strong performance across many languages and tasks and is highly influential.",
+    "link": "https://arxiv.org/pdf/2211.05100.pdf"
+  },
+  {
+    "title": "BEiT: BERT Pre-Training of Image Transformers",
+    "abstract": "BEiT applies BERT-style masked image modeling to pretrain vision transformers, demonstrating that language-modeling techniques can be successfully transferred to vision tasks.",
+    "link": "https://arxiv.org/pdf/2106.08254.pdf"
+  },
+  {
+    "title": "FastText: Efficient Learning of Word Representations and Sentence Classification",
+    "abstract": "FastText presents an efficient method for learning word representations and performing sentence classification, leveraging subword information to improve accuracy, especially for rare words.",
+    "link": "https://arxiv.org/pdf/1607.04606.pdf"
+  },
+  {
+    "title": "InferSent: Sentence Representations from Natural Language Inference",
+    "abstract": "InferSent proposes a supervised approach to learn high-quality sentence embeddings using natural language inference data, achieving strong performance on semantic similarity tasks.",
+    "link": "https://arxiv.org/pdf/1705.02364.pdf"
+  },
+  {
+    "title": "Dynamic Convolution: Attention Over Convolution for Sequence Modeling",
+    "abstract": "Dynamic Convolution introduces an efficient alternative to self-attention by employing dynamic, input-dependent convolution kernels, reducing computational complexity while maintaining performance.",
+    "link": "https://arxiv.org/pdf/1904.08990.pdf"
+  },
+  {
+    "title": "UniXcoder: Unified Cross-Modal Pre-training for Code Understanding and Generation",
+    "abstract": "UniXcoder is a unified pretraining model for code that leverages both natural language and programming language data to improve code understanding and generation, and has been peer-reviewed.",
+    "link": "https://arxiv.org/pdf/2107.03858.pdf"
+  },
+  {
+    "title": "ALBEF: Align Before Fuse for Vision-and-Language Learning",
+    "abstract": "ALBEF proposes an innovative framework that first aligns visual and textual features before fusing them, leading to enhanced performance on a range of vision-and-language tasks. This work is peer-reviewed.",
+    "link": "https://arxiv.org/pdf/2107.07651.pdf"
+  },
+  {
+    "title": "Q-Former: Querying Transformers for Vision-Language Pre-training",
+    "abstract": "Q-Former introduces a query-based mechanism to extract compact representations from vision transformers for vision-language pretraining, improving efficiency and performance on multimodal tasks.",
+    "link": "https://arxiv.org/pdf/2207.13157.pdf"
+  },
+  {
+    "title": "Swin Transformer: Hierarchical Vision Transformer using Shifted Windows",
+    "abstract": "Swin Transformer proposes a hierarchical Transformer architecture that processes images with shifted windows, achieving state-of-the-art performance on various vision tasks while being computationally efficient.",
+    "link": "https://arxiv.org/pdf/2103.14030.pdf"
+  },
+  {
+    "title": "Pyramid Vision Transformer: A Versatile Backbone for Dense Prediction without Convolutions",
+    "abstract": "Pyramid Vision Transformer (PVT) adapts the Transformer architecture to dense prediction tasks by introducing a pyramid structure, offering a flexible and efficient alternative to CNNs for vision tasks.",
+    "link": "https://arxiv.org/pdf/2102.12122.pdf"
+  },
+  {
+    "title": "DINO: Emerging Properties in Self-Supervised Vision Transformers",
+    "abstract": "DINO explores self-supervised learning for vision transformers, revealing emerging properties that lead to competitive performance on image recognition tasks, and has been highly influential in the CV community.",
+    "link": "https://arxiv.org/pdf/2104.14294.pdf"
+  },
+  {
+    "title": "FastFormers: Highly Efficient Transformers",
+    "abstract": "FastFormers introduce novel methods to significantly reduce the computational cost of Transformers while retaining their performance, making them suitable for resource-constrained environments.",
+    "link": "https://arxiv.org/pdf/2112.07623.pdf"
+  },
+  {
+    "title": "Lite Transformer with Long-Short Range Attention",
+    "abstract": "This paper proposes a lightweight Transformer that combines long-range and short-range attention mechanisms to achieve efficient sequence modeling with competitive performance on NLP tasks.",
+    "link": "https://arxiv.org/pdf/2104.03168.pdf"
   }
+
 ]
