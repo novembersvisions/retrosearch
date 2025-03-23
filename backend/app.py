@@ -65,5 +65,9 @@ def search():
     
     return jsonify(result)
 
+@app.route("/team")
+def team():
+    return render_template('team.html', title="ReSearch Team")
+
 if 'DB_NAME' not in os.environ:
     app.run(debug=True, host="0.0.0.0", port=5000)
