@@ -1,3 +1,5 @@
+/*filename: style.css*/
+
 html, body {
     height: 100%;
     margin: 0;
@@ -6,7 +8,6 @@ html, body {
     background-color: #121212;
 }
 
-/* Modern dark theme styling */
 .full-body-container {
     position: absolute;
     top: 0;
@@ -35,11 +36,11 @@ html, body {
 }
 
 #re-text {
-    color: #ff3333; /* Brighter red for better contrast against dark background */
+    color: #ff3333;
 }
 
 #search-text {
-    color: #ffffff; /* White text for better visibility */
+    color: #ffffff;
 }
 
 .input-box {
@@ -63,7 +64,7 @@ html, body {
 .input-box img {
     height: 20px;
     width: 20px;
-    filter: invert(1); /* Invert the color of the magnifying glass to make it white */
+    filter: invert(1);
 }
 
 .top-text {
@@ -91,8 +92,8 @@ html, body {
 #answer-box {
     width: 700px;
     margin-top: 40px;
-    height: calc(100vh - 300px); /* Add this line */
-    min-height: 200px; /* Add this line */
+    height: calc(100vh - 300px); 
+    min-height: 200px; 
     overflow-y: auto;
     padding: 10px;
     scrollbar-width: thin;
@@ -260,7 +261,6 @@ html, body {
     width: 100%;
 }
 
-/* Team page specific styles */
 .team-container {
     width: 900px;
     display: flex;
