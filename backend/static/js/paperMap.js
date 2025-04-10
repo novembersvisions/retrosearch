@@ -1,3 +1,4 @@
+// paperMap.js
 class MultiClusterMap {
     constructor(containerId, tooltipId) {
         this.containerId = containerId;
@@ -8,7 +9,7 @@ class MultiClusterMap {
         this.tooltip = document.getElementById(tooltipId);
 
         // Distances for cluster logic
-        this.centerThreshold = 200;   // near cluster's center => become new center
+        this.centerThreshold = 120;   // near cluster's center => become new center
         this.detachThreshold = 650;   // far => new cluster
 
         // Tooltip timing
@@ -1014,17 +1015,110 @@ detachNode(nodeDatum, cluster) {
 
             // Show
             this.tooltip.style.display = "block";
+            
+            // Store the current node for reference
+            this.tooltip.dataset.currentNode = d.id;
+            
+            // Add mouseenter event to the tooltip
+            this.tooltip.addEventListener('mouseenter', this.handleTooltipMouseEnter.bind(this));
+            this.tooltip.addEventListener('mouseleave', this.handleTooltipMouseLeave.bind(this));
         }, this.tooltipDelay);
     }
 
     handleNodeMouseOut() {
         clearTimeout(this.hoverTimer);
-        this.tooltip.style.display = "none";
+        
+        // Don't hide immediately, give time to potentially enter the tooltip
+        this.hoverTimer = setTimeout(() => {
+            // Only hide if mouse is not over tooltip
+            if (!this.isMouseOverTooltip) {
+                this.tooltip.style.display = "none";
+            }
+        }, 100);
     }
 
-    openPaperLink(d) {
-        if (d.link) window.open(d.link, "_blank");
+    // Add these new methods
+    handleTooltipMouseEnter() {
+        this.isMouseOverTooltip = true;
+        clearTimeout(this.hoverTimer);
     }
+
+    handleTooltipMouseLeave() {
+        this.isMouseOverTooltip = false;
+        this.tooltip.style.display = "none";
+        
+        // Remove the event listeners to prevent memory leaks
+        this.tooltip.removeEventListener('mouseenter', this.handleTooltipMouseEnter);
+        this.tooltip.removeEventListener('mouseleave', this.handleTooltipMouseLeave);
+    }
+
+    //------------------ 
+    // POPUP 
+    //-------------------
+    openPaperLink(d) {
+        // Instead of opening a new window, open the PDF in a popup:
+        this.createPaperPopup(d.link, d.title);
+    }
+
+    createPaperPopup(pdfUrl, paperTitle) {
+        // 1. Create a semi-transparent overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'paper-popup-container';
+
+        // 2. Create the popup content wrapper
+        const popupContent = document.createElement('div');
+        popupContent.className = 'paper-popup-content';
+
+        // 3. Header with close button
+        const header = document.createElement('div');
+        header.className = 'paper-popup-header';
+
+        const titleEl = document.createElement('h3');
+        titleEl.className = 'paper-popup-title';
+        titleEl.textContent = paperTitle || "Paper PDF";
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'paper-popup-close';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = () => {
+            document.body.removeChild(overlay);
+        };
+
+        header.appendChild(titleEl);
+        header.appendChild(closeBtn);
+
+        // 4. Body with the PDF in an iframe
+        const body = document.createElement('div');
+        body.className = 'paper-popup-body';
+
+        const iframe = document.createElement('iframe');
+        iframe.className = 'paper-popup-iframe';
+        iframe.src = pdfUrl; // Link to your PDF (arXiv link, etc.)
+
+        body.appendChild(iframe);
+
+        // 5. Footer (optional: external link or other controls)
+        const footer = document.createElement('div');
+        footer.className = 'paper-popup-footer';
+
+        const externalLink = document.createElement('a');
+        externalLink.className = 'paper-popup-external-link';
+        externalLink.href = pdfUrl;
+        externalLink.target = '_blank';
+        externalLink.textContent = 'Open in new tab';
+        
+        footer.appendChild(externalLink);
+
+        // 6. Put it all together
+        popupContent.appendChild(header);
+        popupContent.appendChild(body);
+        popupContent.appendChild(footer);
+        overlay.appendChild(popupContent);
+
+        // 7. Add overlay to document
+        document.body.appendChild(overlay);
+    }
+
 }
 
 //--------------------------------------
@@ -1066,4 +1160,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Optionally auto-focus
     searchInput.focus();
 });
-

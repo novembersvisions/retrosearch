@@ -5,6 +5,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
 import cossim as cos
 from paper_similarity import SimilarityMatrix
+import random
 
 # ROOT_PATH for linking with all your files. 
 os.environ['ROOT_PATH'] = os.path.abspath(os.path.join("..",os.curdir))
@@ -211,6 +212,191 @@ def paper_as_query():
 @app.route("/team")
 def team():
     return render_template('team.html', title="ReSearch Team")
+    
+@app.route("/explore")
+def explore():
+    """Render the research explore visualization page"""
+    return render_template('explore.html', title="ReSearch Galaxy Explorer")
+
+@app.route("/explore_data")
+def explore_data():
+    """API endpoint for explore visualization data"""
+    try:
+        start_time = time.time()
+        
+        # Get a sample of papers to display
+        sample_size = min(150, len(data))  # Limit to 150 papers for performance
+        sampled_papers = data[:sample_size]
+        
+        # Prepare paper data for visualization
+        papers = []
+        for i, paper in enumerate(sampled_papers):
+            # Check for required fields and set defaults if missing
+            title = paper.get("title", "Untitled Paper")
+            abstract = paper.get("abstract", "No abstract available")
+            link = paper.get("link", "#")
+            
+            # Create a paper object with the fields needed by the visualization
+            paper_obj = {
+                "id": f"paper-{i}",
+                "title": title,
+                "abstract": abstract,
+                "authors": paper.get("authors", "Unknown Author"),
+                "year": paper.get("year", 2023),
+                "citations": paper.get("citations", random.randint(0, 2000)),  # Random citation count if not present
+                "link": link,
+                "cluster": determine_cluster(title, abstract),
+                "readingLevel": determine_reading_level(abstract),
+                "related": []  # Will be populated with related paper IDs
+            }
+            
+            papers.append(paper_obj)
+        
+        # Add related papers based on similarity
+        for i, paper in enumerate(papers):
+            if i < len(paper_similarities):
+                # Get similar papers
+                similar_papers = paper_similarities[i][:5]  # Limit to top 5 for simplicity
+                related_ids = []
+                
+                for similar in similar_papers:
+                    similar_id = similar.get("original_id")
+                    if similar_id is not None and similar_id < len(papers):
+                        related_ids.append(f"paper-{similar_id}")
+                
+                paper["related"] = related_ids
+            else:
+                # If no similarities, add some random connections
+                count = min(3, len(papers) - 1)
+                random_indices = random.sample([j for j in range(len(papers)) if j != i], count)
+                paper["related"] = [f"paper-{j}" for j in random_indices]
+        
+        # Create guided journeys
+        journeys = create_guided_journeys(papers)
+        
+        # Format data for the visualization
+        explore_data = {
+            "papers": papers,
+            "journeys": journeys
+        }
+        
+        end_time = time.time()
+        print(f"Explore data generated in {end_time - start_time:.2f} seconds")
+        
+        return jsonify(explore_data)
+    except Exception as e:
+        print(f"Error generating explore data: {str(e)}")
+        return jsonify({"papers": [], "journeys": [], "error": str(e)})
+
+def determine_cluster(title, abstract):
+    """Determine the research domain/cluster for a paper based on its title and abstract"""
+    combined_text = (title + " " + abstract).lower()
+    
+    # Specific model names detection
+    if "transformer" in combined_text or "attention is all you need" in combined_text:
+        return "NLP"
+    elif "elmo" in combined_text or "deep contextualized word" in combined_text:
+        return "NLP"
+    elif "xlnet" in combined_text or "bert" in combined_text or "gpt" in combined_text:
+        return "NLP"
+    
+    # General domain detection
+    if "machine learning" in combined_text or "neural network" in combined_text:
+        return "Machine Learning"
+    elif "computer vision" in combined_text or "image" in combined_text:
+        return "Computer Vision"
+    elif "natural language" in combined_text or "nlp" in combined_text or "language model" in combined_text:
+        return "NLP"
+    elif "reinforcement" in combined_text or "reward" in combined_text:
+        return "Reinforcement Learning"
+    elif "generative" in combined_text or "gan" in combined_text or "diffusion" in combined_text:
+        return "Generative Models"
+    else:
+        # Fallback to one of the domains randomly
+        domains = ["Machine Learning", "Computer Vision", "NLP", "Reinforcement Learning", "Generative Models"]
+        return domains[hash(title) % len(domains)]
+
+def determine_reading_level(abstract):
+    """Determine the reading complexity of a paper"""
+    words = abstract.split()
+    if not words:
+        return "Introductory"
+    
+    avg_word_length = sum(len(word) for word in words) / len(words)
+    
+    if avg_word_length > 7:
+        return "Advanced"
+    elif avg_word_length > 5.5:
+        return "Intermediate"
+    else:
+        return "Introductory"
+
+def create_guided_journeys(papers):
+    """Create guided journeys through papers"""
+    # Group papers by cluster
+    clusters = {}
+    for paper in papers:
+        cluster = paper["cluster"]
+        if cluster not in clusters:
+            clusters[cluster] = []
+        clusters[cluster].append(paper)
+    
+    journeys = []
+    
+    # Journey templates by research domain
+    journey_descriptions = {
+        "Machine Learning": {
+            "title": "Introduction to ML Fundamentals",
+            "description": "A curated path through essential machine learning concepts and algorithms for beginners.",
+            "class": "ml"
+        },
+        "Computer Vision": {
+            "title": "Computer Vision Breakthrough Papers",
+            "description": "Explore the most influential papers that revolutionized computer vision techniques.",
+            "class": "cv"
+        },
+        "NLP": {
+            "title": "NLP Evolution: From RNNs to Transformers",
+            "description": "Follow the evolution of natural language processing from recurrent networks to transformer architectures.",
+            "class": "nlp"
+        },
+        "Reinforcement Learning": {
+            "title": "Foundations of Reinforcement Learning",
+            "description": "Understand the core principles and algorithms behind reinforcement learning.",
+            "class": "rl"
+        },
+        "Generative Models": {
+            "title": "Generative AI Revolution",
+            "description": "Discover the papers that led to today's powerful generative AI systems.",
+            "class": "gen"
+        }
+    }
+    
+    for i, (cluster, cluster_papers) in enumerate(clusters.items()):
+        # Skip if not enough papers
+        if len(cluster_papers) < 3:
+            continue
+        
+        journey_info = journey_descriptions.get(cluster, {
+            "title": f"Journey through {cluster}",
+            "description": f"Explore important papers in {cluster}.",
+            "class": "default"
+        })
+        
+        # Sort papers by citations (or randomly if no citations) and take a subset
+        sorted_papers = sorted(cluster_papers, key=lambda p: p.get("citations", 0), reverse=True)
+        journey_papers = sorted_papers[:min(5, len(sorted_papers))]  # Take top 5 papers or fewer
+        
+        journeys.append({
+            "id": f"journey-{i+1}",
+            "title": journey_info["title"],
+            "description": journey_info["description"],
+            "domain": cluster,
+            "steps": [p["id"] for p in journey_papers],
+            "class": journey_info["class"]
+        })
+    
+    return journeys
 
 if 'DB_NAME' not in os.environ:
     app.run(debug=True, host="0.0.0.0", port=5000)

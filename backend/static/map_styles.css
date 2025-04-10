@@ -283,3 +283,98 @@
     position: relative;
     overflow: hidden;
 }
+
+/* Paper Popup Styles */
+.paper-popup-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s;
+}
+
+.paper-popup-content {
+    background-color: #222;
+    width: 85%;
+    height: 90%;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-left: 4px solid #ff3333;
+}
+
+.paper-popup-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(34, 34, 34, 0.95);
+}
+
+.paper-popup-title {
+    margin: 0;
+    font-family: 'Kanit', sans-serif;
+    font-size: 18px;
+    color: #fff;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.paper-popup-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #ddd;
+    padding: 0 5px;
+    transition: color 0.2s ease;
+}
+
+.paper-popup-close:hover {
+    color: #ff3333;
+}
+
+.paper-popup-body {
+    flex: 1;
+    overflow: hidden;
+    background-color: #333;
+}
+
+.paper-popup-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background-color: #fff;
+}
+
+.paper-popup-footer {
+    padding: 10px 20px;
+    border-top: 1px solid #333;
+    display: flex;
+    justify-content: flex-end;
+    background-color: rgba(34, 34, 34, 0.95);
+}
+
+.paper-popup-external-link {
+    font-family: 'Montserrat', sans-serif;
+    color: #ff6666;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s ease;
+}
+
+.paper-popup-external-link:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}

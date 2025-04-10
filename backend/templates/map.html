@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReSearch - Paper Map Visualization</title>
+    <title>ReSearch - Paper Orb Visualization</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="../static/images/Re.ico" type="image/Re-icon">
     <link rel="stylesheet" href="{{ url_for('static', filename='map_styles.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,17 +15,23 @@
     <script src="{{ url_for('static', filename='js/paperMap.js') }}"></script>
 </head>
 <body>
+    <!-- Particle background -->
+    <div id="particles-js"></div>
+    
     <div class="full-body-container">
-      <div class="nav-container">
-        <a href="/" class="nav-link">Home</a>
-        <a href="/map" class="nav-link">Map</a>
-        <a href="/team" class="nav-link">Team</a>
-      </div>
-  
       <div class="top-text">
         <div class="research-title">
-          <span id="re-text">Re</span><span id="search-text">Search Map</span>
+          <span id="re-text">Re</span><span id="search-text">Search Orb</span>
         </div>
+        
+        <!-- Moved navigation under the ReSearch title -->
+        <div class="nav-container">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/map" class="nav-link">Orb</a>
+          <a href="/explore" class="nav-link">Explore</a>
+          <a href="/team" class="nav-link">Team</a>
+        </div>
+        
         <div class="input-box" onclick="sendFocus()">
           <img src="{{ url_for('static', filename='images/mag.png') }}" />
           <input placeholder="Search for research papers..." id="map-search-input">
@@ -40,5 +47,9 @@
         <p class="tooltip-abstract"></p>
       </div>
     </div>
+
+    <!-- Add particles.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
   </body>
 </html>
