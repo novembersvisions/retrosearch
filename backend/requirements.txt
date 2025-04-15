@@ -30,3 +30,4 @@ scikit-learn
 scipy
 numpy
 pandas
+flask
