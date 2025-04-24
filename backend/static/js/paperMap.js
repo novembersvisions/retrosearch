@@ -126,13 +126,13 @@ class MultiClusterMap {
     setupReinforceListeners() {
         // Ctrl key press/release for reinforcement mode
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Control' && !this.reinforcementMode && this.clusters.length > 0) {
+            if (e.key === 'r' && !this.reinforcementMode && this.clusters.length > 0) {
                 this.enterReinforcementMode();
             }
         });
         
         document.addEventListener('keyup', (e) => {
-            if (e.key === 'Control' && this.reinforcementMode) {
+            if (e.key === 'r' && this.reinforcementMode) {
                 // Don't exit if user is about to click the reinforce button
                 if (this.isMouseOverReinforceButton) return;
                 this.exitReinforcementMode(false); // false = don't apply reinforcement
