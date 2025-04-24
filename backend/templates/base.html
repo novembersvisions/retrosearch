@@ -79,6 +79,7 @@
         }
 
         function filterText() {
+            console.log("filterText() triggered");
             const query = document.getElementById("filter-text-val").value.trim();
             document.getElementById("answer-box").innerHTML = "";
 
@@ -98,105 +99,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Clear the loading indicator
-                    document.getElementById("answer-box").innerHTML = "";
-
-                    if (!Array.isArray(data) || data.length === 0) {
-                        document.getElementById("answer-box").innerHTML =
-                            "<div class='no-results'>No results found</div>";
-                        return;
-                    }
-
-                    data.forEach(item => {
-                        const resultDiv = document.createElement("div");
-                        resultDiv.className = "result-item";
-
-                        // Create title element
-                        const titleElement = document.createElement("h3");
-                        titleElement.className = "paper-title";
-                        titleElement.textContent = item.title || "No title available";
-
-                        // Create abstract element
-                        const abstractElement = document.createElement("p");
-                        abstractElement.className = "abstract";
-                        abstractElement.textContent = item.abstract || "No abstract available";
-
-                        // Create link element if available
-                        let linkElement = null;
-                        if (item.link) {
-                            linkElement = document.createElement("a");
-                            linkElement.href = item.link;
-                            linkElement.target = "_blank";
-                            linkElement.className = "paper-link";
-                            linkElement.textContent = "Read Paper";
-                        }
-
-                        // Add elements to result div
-                        resultDiv.appendChild(titleElement);
-                        resultDiv.appendChild(abstractElement);
-                        if (linkElement) {
-                            resultDiv.appendChild(linkElement);
-                        }
-
-                        // Add result to answer box
-                        document.getElementById("answer-box").appendChild(resultDiv);
-                    });
-                    document.getElementById("keyword-search-container").style.display = "flex";
-                })
-                .catch(error => {
-                    console.error("Error fetching search results:", error);
-                    document.getElementById("answer-box").innerHTML =
-                        "<div class='error'>Error fetching results: " + error.message + "</div>";
-                });
-        }
-    </script>
-    <script>
-        function debounce(func, wait) {
-            let timeout;
-            return function () {
-                const context = this;
-                const args = arguments;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    func.apply(context, args);
-                }, wait);
-            };
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const searchInput = document.getElementById('filter-text-val');
-
-            const debouncedSearch = debounce(filterText, 300);
-
-            searchInput.addEventListener('input', debouncedSearch);
-
-            sendFocus();
-        });
-
-        function sendFocus() {
-            document.getElementById('filter-text-val').focus();
-        }
-
-        function filterText() {
-            const query = document.getElementById("filter-text-val").value.trim();
-            document.getElementById("answer-box").innerHTML = "";
-
-            if (!query) return; // Don't search if query is empty
-
-            // Show small loading indicator
-            const loadingIndicator = document.createElement("div");
-            loadingIndicator.className = "loading";
-            loadingIndicator.textContent = "Searching...";
-            document.getElementById("answer-box").appendChild(loadingIndicator);
-
-            fetch("/search?" + new URLSearchParams({ query: query }).toString())
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok: ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
+                    console.log("Received data:", data);
                     // Clear the loading indicator
                     document.getElementById("answer-box").innerHTML = "";
 
@@ -243,6 +146,7 @@
                         // Add result to answer box
                         document.getElementById("answer-box").appendChild(resultDiv);
                     });
+                    document.getElementById("keyword-search-container").style.display = "flex";
                 })
                 .catch(error => {
                     console.error("Error fetching search results:", error);
@@ -328,11 +232,20 @@
     </script>
     //highlighting green
     <script>
-        document.getElementById("keyword-search-bar").addEventListener("input", debounce(keywordHighlight, 200));
+        document.addEventListener('DOMContentLoaded', () => {
+            const kwInput = document.getElementById('keyword-search-bar');
+            kwInput.addEventListener('input', debounce(keywordHighlight, 200));
+        });
 
         function keywordHighlight() {
             const raw = document.getElementById("keyword-search-bar").value.toLowerCase().trim();
             const keywords = raw.split(/[\s,]+/).filter(k => k);
+            if (keywords.length === 0) {
+                document.querySelectorAll(".result-item")
+                    .forEach(item => item.style.borderLeftColor = "");
+                return;
+            }
+
 
             const resultItems = document.querySelectorAll(".result-item");
 
