@@ -25,8 +25,15 @@ class MultiClusterMap {
         this.zoomExtent = [0.2, 5]; // Min and max zoom levels
         this.currentZoom = 1;       // Track zoom level
 
+        this.reinforcementMode = false;
+        this.selectedNodes = new Set();
+        this.reinforceButton = null;
+
         // If you have a loading or "message" state, we can display that
-        this.showMessage("Search for research papers to visualize");
+        this.showMessage("Search for research papers to visualize")
+
+        // Set up reinforcement mode listeners
+        this.setupReinforceListeners();
     }
 
     //--------------------------------------
@@ -113,6 +120,375 @@ class MultiClusterMap {
     }
 
     //--------------------------------------
+    //  Rocchio Reinforcement specific
+    //--------------------------------------
+
+    setupReinforceListeners() {
+        // Ctrl key press/release for reinforcement mode
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Control' && !this.reinforcementMode && this.clusters.length > 0) {
+                this.enterReinforcementMode();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Control' && this.reinforcementMode) {
+                // Don't exit if user is about to click the reinforce button
+                if (this.isMouseOverReinforceButton) return;
+                this.exitReinforcementMode(false); // false = don't apply reinforcement
+            }
+        });
+    }
+
+    enterReinforcementMode() {
+        this.reinforcementMode = true;
+        this.selectedNodes.clear();
+        
+        // Add overlay with instructions
+        const overlay = d3.select(`#${this.containerId}`)
+            .append("div")
+            .attr("class", "reinforcement-overlay")
+            .style("position", "absolute")
+            .style("top", "0")
+            .style("left", "0")
+            .style("width", "100%")
+            .style("height", "100%")
+            .style("background-color", "rgba(0, 0, 0, 0.7)")
+            .style("z-index", "100")
+            .style("pointer-events", "none")
+            .style("display", "flex")
+            .style("justify-content", "center")
+            .style("align-items", "center")
+            .style("opacity", "0")
+            .style("transition", "opacity 0.3s ease");
+            
+        overlay.append("div")
+            .attr("class", "reinforcement-message")
+            .style("color", "#fff")
+            .style("font-family", "'Montserrat', sans-serif")
+            .style("font-size", "18px")
+            .style("background-color", "rgba(34, 34, 34, 0.9)")
+            .style("padding", "15px 25px")
+            .style("border-radius", "10px")
+            .style("border-left", "4px solid #ff3333")
+            .style("max-width", "80%")
+            .style("text-align", "center")
+            .html("Select 1-3 papers to reinforce your search <br><span style='font-size: 14px; color: #aaa;'>(Release Ctrl key to cancel)</span>");
+        
+        // Fade in overlay
+        overlay.transition().duration(300).style("opacity", "1");
+        
+        // Apply dimming to all nodes except center
+        if (this.clusters.length > 0) {
+            this.clusters.forEach(cluster => {
+                cluster.nodeGroup.selectAll(".paper-node-group")
+                    .filter(d => d.id !== 0) // Don't dim center node
+                    .style("opacity", 0.4)
+                    .style("transition", "opacity 0.3s ease");
+            });
+        }
+    }
+    
+    createReinforceButton() {
+        // Only create if it doesn't exist
+        if (this.reinforceButton) return;
+        
+        this.reinforceButton = d3.select(`#${this.containerId}`)
+            .append("button")
+            .attr("class", "reinforce-button")
+            .style("position", "absolute")
+            .style("bottom", "20px")
+            .style("left", "50%")
+            .style("transform", "translateX(-50%)")
+            .style("background-color", "#ff3333")
+            .style("color", "white")
+            .style("border", "none")
+            .style("border-radius", "5px")
+            .style("padding", "10px 20px")
+            .style("font-family", "'Montserrat', sans-serif")
+            .style("font-size", "16px")
+            .style("cursor", "pointer")
+            .style("box-shadow", "0 4px 10px rgba(0, 0, 0, 0.3)")
+            .style("z-index", "200")
+            .style("opacity", "0")
+            .style("transition", "opacity 0.3s ease, background-color 0.2s ease")
+            .style("pointer-events", "auto")
+            .text(`Reinforce with ${this.selectedNodes.size} paper${this.selectedNodes.size !== 1 ? 's' : ''}`)
+            .on("mouseover", () => {
+                this.isMouseOverReinforceButton = true;
+                this.reinforceButton.style("background-color", "#ff5555");
+            })
+            .on("mouseout", () => {
+                this.isMouseOverReinforceButton = false;
+                this.reinforceButton.style("background-color", "#ff3333");
+            })
+            .on("click", () => this.applyReinforcement());
+            
+        this.reinforceButton.transition().duration(300).style("opacity", "1");
+    }
+    
+    updateReinforceButton() {
+        if (this.reinforceButton) {
+            this.reinforceButton.text(`Reinforce with ${this.selectedNodes.size} paper${this.selectedNodes.size !== 1 ? 's' : ''}`);
+        }
+    }
+    
+    removeReinforceButton() {
+        if (this.reinforceButton) {
+            this.reinforceButton.transition()
+                .duration(300)
+                .style("opacity", "0")
+                .on("end", () => {
+                    this.reinforceButton.remove();
+                    this.reinforceButton = null;
+                });
+        }
+    }
+    
+    exitReinforcementMode(applyReinforcement = false) {
+        // If not applying reinforcement, restore normal state
+        if (!applyReinforcement) {
+            this.reinforcementMode = false;
+            this.selectedNodes.clear();
+            
+            // Remove overlay
+            d3.select(`#${this.containerId}`).selectAll(".reinforcement-overlay")
+                .transition().duration(300).style("opacity", "0")
+                .on("end", function() { d3.select(this).remove(); });
+            
+            // Restore all nodes to normal opacity
+            if (this.clusters.length > 0) {
+                this.clusters.forEach(cluster => {
+                    cluster.nodeGroup.selectAll(".paper-node-group")
+                        .style("opacity", 1);
+                });
+            }
+            
+            // Remove reinforce button
+            this.removeReinforceButton();
+        }
+    }
+    
+    toggleNodeSelection(d, nodeSelection) {
+        if (!this.reinforcementMode || d.id === 0) return; // Can't select center node
+        
+        const isAlreadySelected = this.selectedNodes.has(d);
+        
+        if (isAlreadySelected) {
+            // Deselect
+            this.selectedNodes.delete(d);
+            nodeSelection.select("circle")
+                .style("stroke", "#333")
+                .style("stroke-width", "1.5px");
+        } else {
+            // Maximum 3 selections
+            if (this.selectedNodes.size >= 3) return;
+            
+            // Select
+            this.selectedNodes.add(d);
+            nodeSelection.select("circle")
+                .style("stroke", "#ffcc00")
+                .style("stroke-width", "3px");
+        }
+        
+        // Show/hide reinforce button
+        if (this.selectedNodes.size > 0) {
+            this.createReinforceButton();
+            this.updateReinforceButton();
+        } else {
+            this.removeReinforceButton();
+        }
+    }
+    
+    async applyReinforcement() {
+        if (this.selectedNodes.size === 0) return;
+
+        this.reinforceButton
+        .attr("disabled", true)
+        .text("Reinforcing…");
+        
+        // Get center node and cluster
+        const mainCluster = this.clusters[0];
+        if (!mainCluster) return;
+        
+        const centerNode = mainCluster.nodes.find(n => n.id === 0);
+        if (!centerNode) return;
+        
+        try {
+            // Get data for request
+            const selectedPaperIds = Array.from(this.selectedNodes).map(node => node.original_id);
+            const unselectedPaperIds = mainCluster.nodes
+                .filter(node => node.id !== 0 && !this.selectedNodes.has(node))
+                .map(node => node.original_id);
+            
+            // Prepare request data
+            const requestData = {
+                center_id: centerNode.original_id,
+                selected_ids: selectedPaperIds.filter(id => id !== undefined && id >= 0),
+                unselected_ids: unselectedPaperIds.filter(id => id !== undefined && id >= 0)
+            };
+            
+            // Make API call
+            const response = await fetch("/reinforce_map", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Network error: ${response.statusText}`);
+            }
+            
+            // Parse response
+            const newMapData = await response.json();
+            
+            // Reset interface
+            this.exitReinforcementMode(true);
+            
+            // Update visualization
+            this.updateClusterWithReinforcement(newMapData, selectedPaperIds);
+            
+        } catch (error) {
+            console.error("Reinforcement error:", error);
+            this.showMessage(`Error: ${error.message}`);
+            // restore button so they can try again
+            this.reinforceButton
+                .attr("disabled", null)
+                .text(`Reinforce`);
+        }
+    }
+    
+    updateClusterWithReinforcement(newMapData, selectedPaperIds) {
+        // Ensure we have cluster data
+        if (this.clusters.length === 0 || !newMapData.center) return;
+        
+        const mainCluster = this.clusters[0];
+        const position = { 
+            x: mainCluster.bounds.centerX, 
+            y: mainCluster.bounds.centerY 
+        };
+        
+        // Stop current simulation
+        mainCluster.simulation.stop();
+        
+        // Remove all nodes except center and selected
+        const keptNodes = mainCluster.nodes.filter(node => 
+            node.id === 0 || selectedPaperIds.includes(node.original_id)
+        );
+        
+        // Remove all links
+        mainCluster.links = [];
+        
+        // Clear visual elements
+        mainCluster.nodeGroup.selectAll(".paper-node-group")
+            .filter(d => !keptNodes.includes(d))
+            .transition()
+            .duration(300)
+            .style("opacity", 0)
+            .remove();
+            
+        mainCluster.linkGroup.selectAll(".paper-link")
+            .transition()
+            .duration(300)
+            .style("opacity", 0)
+            .remove();
+        
+        // Add new related nodes from reinforcement
+        const newRelatedNodes = newMapData.related
+            .filter(r => !selectedPaperIds.includes(r.original_id))
+            .map((r, i) => ({
+                ...r, 
+                __clusterId: mainCluster.id, 
+                id: keptNodes.length + i,
+                // Start positions near the center for animation
+                x: position.x + (Math.random() * 50 - 25),
+                y: position.y + (Math.random() * 50 - 25)
+            }));
+        
+        // Update the nodes array
+        mainCluster.nodes = [...keptNodes, ...newRelatedNodes];
+        
+        // Create links for all nodes to center
+        mainCluster.links = mainCluster.nodes
+            .filter(n => n.id !== 0) // Skip center node
+            .map(n => ({
+                source: 0,
+                target: n.id,
+                value: n.score
+            }));
+        
+        // Create new nodes
+        const newNodeSel = mainCluster.nodeGroup.selectAll(".paper-node-group")
+            .data(newRelatedNodes, d => d.id)
+            .enter()
+            .append("g")
+            .attr("class", "paper-node-group")
+            .attr("transform", d => `translate(${position.x},${position.y})`)
+            .style("opacity", 0)
+            .call(d3.drag()
+                .on("start", (event, d) => this.dragstarted(event, d, mainCluster.id))
+                .on("drag", (event, d) => this.dragged(event, d, mainCluster.id))
+                .on("end", (event, d) => this.dragended(event, d, mainCluster.id))
+            );
+        
+        // Add circle to each new node
+        newNodeSel.append("circle")
+            .attr("class", "paper-node")
+            .attr("r", d => this.getNodeRadius(d))
+            .attr("fill", d => this.getNodeColor(d))
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5)
+            .on("mouseover", (event, d) => this.handleNodeMouseOver(event, d))
+            .on("mouseout", () => this.handleNodeMouseOut())
+            .on("click", (event, d) => {
+                if (this.reinforcementMode) {
+                    this.toggleNodeSelection(d, d3.select(event.currentTarget.parentNode));
+                } else {
+                    this.openPaperLink(d);
+                }
+            });
+        
+        // Add titles to new nodes
+        this.addNodeTitles(newNodeSel);
+        
+        // Create new links
+        const newLinkSel = mainCluster.linkGroup.selectAll(".paper-link")
+            .data(mainCluster.links)
+            .enter()
+            .append("line")
+            .attr("class", "paper-link")
+            .attr("stroke", "#444")
+            .attr("stroke-opacity", 0)
+            .attr("stroke-width", d => Math.max(1, d.value * 6))
+            .attr("x1", position.x)
+            .attr("y1", position.y)
+            .attr("x2", position.x)
+            .attr("y2", position.y);
+        
+        // Update simulation with new nodes and links
+        mainCluster.simulation.nodes(mainCluster.nodes)
+            .force("link").links(mainCluster.links);
+        
+        // Fade in new nodes with staggered timing
+        newNodeSel.transition()
+            .delay((d, i) => i * 30)
+            .duration(600)
+            .style("opacity", 1);
+        
+        // Fade in links with staggered timing
+        newLinkSel.transition()
+            .delay((d, i) => i * 25)
+            .duration(500)
+            .attr("stroke-opacity", 0.6);
+        
+        // Restart simulation
+        mainCluster.simulation.alpha(1).restart();
+        
+        // Update cluster bounds
+        this.updateClusterBounds(mainCluster.id);
+    }
+
+    //--------------------------------------
     //  INITIALIZE ZOOM BEHAVIOR
     //--------------------------------------
     initZoom() {
@@ -135,13 +511,6 @@ class MultiClusterMap {
 
         // Add zoom controls
         this.addZoomControls();
-    }
-
-    updateTooltipPositionForZoom() {
-        // This method will be called during zoom events
-        // to adjust tooltip position calculation if needed
-        // Currently, we're not doing anything special here,
-        // but it's a hook for future enhancements
     }
 
     addZoomControls() {
@@ -260,19 +629,34 @@ class MultiClusterMap {
             // Delayed tooltip
             .on("mouseover", (event, d) => this.handleNodeMouseOver(event, d))
             .on("mouseout", () => this.handleNodeMouseOut())
-            .on("click", (event, d) => this.openPaperLink(d));
+            .on("click", (event, d) => {
+                if (this.reinforcementMode) {
+                    this.toggleNodeSelection(d, d3.select(event.currentTarget.parentNode));
+                } else {
+                    this.openPaperLink(d);
+                }
+            })
 
         // Titles
         this.addNodeTitles(nodeSel);
 
         // Force simulation local to this cluster
         const simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(links).id(d => d.id).distance(d => 200 * (1 - d.value)))
-            .force("charge", d3.forceManyBody().strength(-1200))
-            .force("collision", d3.forceCollide().radius(d => this.getNodeRadius(d) + 25))
-            // center the cluster around the specified position
-            .force("x", d3.forceX(position.x).strength(0.1))
-            .force("y", d3.forceY(position.y).strength(0.1));
+        // weaker link pull, min distance 50px
+        .force("link", d3.forceLink(links)
+            .id(d => d.id)
+            .distance(d => 150 * (1 - d.value) + 150)
+            .strength(0.2)
+        )
+        // gentler repulsion
+        .force("charge", d3.forceManyBody().strength(-200))
+        // lighter, fixed collision padding
+        .force("collision", d3.forceCollide()
+            .radius(d => this.getNodeRadius(d) + 30)
+        )
+        // softer centering gravity
+        .force("x", d3.forceX(position.x).strength(0.05))
+        .force("y", d3.forceY(position.y).strength(0.05));
 
         simulation.on("tick", () => {
             // Apply inter-cluster node collision force before updating positions
@@ -744,11 +1128,21 @@ class MultiClusterMap {
 
         // Create the force simulation (gentle start)
         const simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(links).id(d => d.id).distance(d => 200 * (1 - d.value)))
-            .force("charge", d3.forceManyBody().strength(-1200))
-            .force("collision", d3.forceCollide().radius(d => this.getNodeRadius(d) + 25))
-            .force("x", d3.forceX(position.x).strength(0.1))
-            .force("y", d3.forceY(position.y).strength(0.1))
+        // weaker link pull, min distance 50px
+        .force("link", d3.forceLink(links)
+            .id(d => d.id)
+            .distance(d => 150 * (1 - d.value) + 150)
+            .strength(0.2)
+        )
+        // gentler repulsion
+        .force("charge", d3.forceManyBody().strength(-200))
+        // lighter, fixed collision padding
+        .force("collision", d3.forceCollide()
+            .radius(d => this.getNodeRadius(d) + 30)
+        )
+        // softer centering gravity
+        .force("x", d3.forceX(position.x).strength(0.05))
+        .force("y", d3.forceY(position.y).strength(0.05))
             .alpha(0); // Start paused
 
         // Keep center node fixed initially
@@ -974,16 +1368,58 @@ class MultiClusterMap {
     //  NODES: RADIUS, COLOR, TITLE, etc.
     //--------------------------------------
     getNodeRadius(d) {
-        // cluster center is bigger
-        if (d.id === 0) return 70;
-        return 30 + (d.score * 25);
+        // Center node remains unchanged
+        if (d.id === 0) return 100;
+        
+        // Base size (slightly smaller than current default)
+        const baseSize = 15;
+        
+        // Similarity score still matters, but with less impact
+        const scoreContribution = d.score * 15;
+        
+        // Citation count contribution (logarithmic scale for visual balance)
+        let citationContribution = 0;
+        if (d.citations && d.citations > 0) {
+            // Log base 10 with some scaling to make differences visible but not extreme
+            // ln(citations + 1) * 5 gives a nice curve:
+            // 10 citations = ~12px addition
+            // 100 citations = ~23px addition
+            // 1000 citations = ~35px addition
+            // 10000 citations = ~46px addition
+            citationContribution = Math.log(d.citations + 1) * 8;
+            
+            // Cap the maximum citation contribution to prevent huge nodes
+            citationContribution = Math.min(citationContribution, 45);
+        }
+        
+        return baseSize + scoreContribution + citationContribution;
     }
 
     getNodeColor(d) {
+        // Center node remains bright red
         if (d.id === 0) return "#ff3333";
-        if (d.score > 0.75) return "#ff6666";
-        if (d.score > 0.5) return "#992222";
-        return "#661111";
+        
+        // Create distinct color bands for the high similarity scores
+        // Extremely high similarity (0.97-1.0)
+        if (d.score >= 0.97) return "#ff6666";  // Brightest red
+        
+        // Very high similarity (0.94-0.97)
+        if (d.score >= 0.94) return "#ff4444";  // Very bright red
+        
+        // High similarity (0.92-0.94)
+        if (d.score >= 0.92) return "#ee3333";  // Bright red
+        
+        // Moderately high similarity (0.90-0.92)
+        if (d.score >= 0.90) return "#cc2222";  // Medium red
+        
+        // Medium similarity (0.87-0.90)
+        if (d.score >= 0.87) return "#aa1111";  // Medium-dark red
+        
+        // Lower similarity (0.85-0.87)
+        if (d.score >= 0.85) return "#880000";  // Dark red
+        
+        // Low similarity (below 0.85)
+        return "#880000";  // Green for clear distinction
     }
 
     addNodeTitles(selection) {
