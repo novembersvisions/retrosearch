@@ -18,3 +18,7 @@ build/
 *.egg-info/
 helpers/*
 json_template/
+
+*.pkl
+
+precomputed/*
