@@ -5,7 +5,8 @@
     min-height: 500px;
     margin: 40px auto 0;
     position: relative;
-    overflow: visible; /* Allow clusters to move beyond boundaries */
+    overflow: visible;
+    /* Allow clusters to move beyond boundaries */
 }
 
 .map-container-rect {
@@ -71,7 +72,8 @@
     padding: 15px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
     display: none;
-    z-index: 1001; /* Above everything */
+    z-index: 1001;
+    /* Above everything */
     border-left: 4px solid #ff3333;
     transition: all 0.2s ease;
     opacity: 0.95;
@@ -95,6 +97,14 @@
     padding-right: 5px;
     scrollbar-width: thin;
     scrollbar-color: #ff3333 #333;
+}
+
+.rocchio {
+    font-family: 'Montserrat', sans-serif;
+    color: #bbb;
+    font-size: 12px;
+    margin-bottom: -20px;
+
 }
 
 .tooltip-abstract::-webkit-scrollbar {
@@ -144,25 +154,55 @@
 }
 
 @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
 }
 
 @keyframes fadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
 
 @keyframes expandFromCenter {
-    0% { transform: scale(0.1); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(0.1);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 @keyframes spinAndGrow {
-    0% { transform: scale(0.1) rotate(0deg); opacity: 0; }
-    50% { opacity: 1; }
-    100% { transform: scale(1) rotate(360deg); opacity: 1; }
+    0% {
+        transform: scale(0.1) rotate(0deg);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) rotate(360deg);
+        opacity: 1;
+    }
 }
 
 .zoom-controls {
@@ -248,10 +288,21 @@
 }
 
 @keyframes fadeInOut {
-    0% { opacity: 0; }
-    10% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
+    0% {
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }
 
 /* Animation for new clusters */
@@ -269,13 +320,15 @@
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    margin: 20px auto;  /* some breathing room */
-    justify-content: flex-start; /* or center */
+    margin: 20px auto;
+    /* some breathing room */
+    justify-content: flex-start;
+    /* or center */
 }
 
 /* Each mini-map container styling */
 .mini-map-wrapper {
-    width: 400px; 
+    width: 400px;
     height: 400px;
     background-color: rgba(20, 20, 20, 0.4);
     border-radius: 15px;
