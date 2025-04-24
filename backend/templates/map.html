@@ -1,55 +1,97 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReSearch - Paper Orb Visualization</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" href="../static/images/Re.ico" type="image/Re-icon">
-    <link rel="stylesheet" href="{{ url_for('static', filename='map_styles.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit&family=Montserrat:wght@400;500;600&family=Open+Sans:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-    <script src="{{ url_for('static', filename='js/paperMap.js') }}"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReSearch - Paper Orb Visualization</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="../static/images/Re.ico" type="image/Re-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='map_styles.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit&family=Montserrat:wght@400;500;600&family=Open+Sans:wght@500;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="{{ url_for('static', filename='js/paperMap.js') }}"></script>
 </head>
+
 <body>
-    <!-- Particle background -->
-    <div id="particles-js"></div>
-    
-    <div class="full-body-container">
-      <div class="top-text">
-        <div class="research-title">
-          <span id="re-text">Re</span><span id="search-text">Search Orb</span>
-        </div>
-        
-        <!-- Moved navigation under the ReSearch title -->
-        <div class="nav-container">
-          <a href="/" class="nav-link">Home</a>
-          <a href="/map" class="nav-link">Orb</a>
-          <a href="/explore" class="nav-link">Explore</a>
-          <a href="/team" class="nav-link">Team</a>
-        </div>
-        
-        <div class="input-box" onclick="sendFocus()">
-          <img src="{{ url_for('static', filename='images/mag.png') }}" />
-          <input placeholder="Search for research papers..." id="map-search-input">
-        </div>
+  <!-- Particle background -->
+  <div id="particles-js"></div>
+
+  <div class="full-body-container">
+    <div class="top-text">
+      <div class="research-title">
+        <span id="re-text">Re</span><span id="search-text">Search Orb</span>
       </div>
-  
-      <!-- All clusters go inside this single container -->
-      <div id="map-container"></div>
-  
-      <!-- Single tooltip for all nodes -->
-      <div id="paper-tooltip" class="paper-tooltip">
-        <h3 class="tooltip-title"></h3>
-        <p class="tooltip-abstract"></p>
+
+      <!-- Moved navigation under the ReSearch title -->
+      <div class="nav-container">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/map" class="nav-link">Orb</a>
+        <a href="/explore" class="nav-link">Explore</a>
+        <a href="/team" class="nav-link">Team</a>
+      </div>
+
+      <div class="input-box" onclick="sendFocus()">
+        <img src="{{ url_for('static', filename='images/mag.png') }}" />
+        <input placeholder="Search for research papers..." id="map-search-input">
+      </div>
+      <div class="input-box" id="keyword-search-container" style="display: none;">
+        <img src="{{ url_for('static', filename='images/mag.png') }}" />
+        <input placeholder="Filter by keywords..." id="keyword-search-bar">
       </div>
     </div>
 
-    <!-- Add particles.js library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
-    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
-  </body>
+    <!-- All clusters go inside this single container -->
+    <div id="map-container"></div>
+
+    <!-- Single tooltip for all nodes -->
+    <div id="paper-tooltip" class="paper-tooltip">
+      <h3 class="tooltip-title"></h3>
+      <p class="tooltip-abstract"></p>
+    </div>
+  </div>
+
+  <!-- Add particles.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+  <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+  <script>
+    document.getElementById("keyword-search-bar").addEventListener("input", debounce(keywordHighlightMap, 200));
+
+    function keywordHighlightMap() {
+      const raw = document.getElementById("keyword-search-bar").value.toLowerCase().trim();
+      const keywords = raw.split(/[\s,]+/).filter(k => k);
+      if (keywords.length === 0) {
+        // If empty, reset all orbs to original color
+        d3.selectAll(".paper-node-group").each(function (d) {
+          const node = d3.select(this);
+          node.select("circle").attr("fill", d.originalColor || getNodeColorFallback(d));
+        });
+        return;
+      }
+      d3.selectAll(".paper-node-group").each(function (d) {
+        const node = d3.select(this);
+        const paper = d;
+
+        const abstract = (paper.abstract || "").toLowerCase();
+        const hasAll = keywords.every(k => abstract.includes(k));
+
+        if (hasAll) {
+          node.select("circle").attr("fill", "green");
+        } else {
+          node.select("circle").attr("fill", paper.originalColor || getNodeColorFallback(paper));
+        }
+      });
+    }
+    function getNodeColorFallback(d) {
+      if (d.isCenter) return "#ffffff";
+      return "#ff3333";
+    }
+  </script>
+</body>
+
 </html>
