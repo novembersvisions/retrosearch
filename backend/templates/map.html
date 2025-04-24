@@ -60,7 +60,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
   <script src="{{ url_for('static', filename='js/base.js') }}"></script>
   <script>
-    document.getElementById("keyword-search-bar").addEventListener("input", debounce(keywordHighlightMap, 200));
+    document.addEventListener('DOMContentLoaded', () => {
+      const kwInput = document.getElementById('keyword-search-bar');
+      function debounce(fn, wait) {
+        let timer;
+        return (...args) => {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn.apply(this, args), wait);
+        };
+      }
+      kwInput.addEventListener('input', debounce(keywordHighlightMap, 200));
+    });
 
     function keywordHighlightMap() {
       const raw = document.getElementById("keyword-search-bar").value.toLowerCase().trim();
