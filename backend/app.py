@@ -459,6 +459,8 @@ precompute_hash_path = os.path.join(precompute_dir, 'data_hash.txt')
 data_hash = hashlib.md5(json.dumps([{'title': d['title'], 'abstract': d['abstract']} for d in data]).encode()).hexdigest()
 
 recompute = False
+
+# Check if precomputed files exist and compare hashes
 if os.path.exists(precompute_hash_path):
     with open(precompute_hash_path, 'r') as f:
         saved_data_hash = f.read().strip()
