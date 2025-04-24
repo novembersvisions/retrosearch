@@ -21,4 +21,5 @@ json_template/
 
 *.pkl
 
-precomputed/*
+backend/precomputed/*
+backend/precomputed/
