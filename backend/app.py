@@ -459,11 +459,21 @@ def reinforce_map():
             gamma=0.15
         )
         
+        print("Original query vector (first 5):", center_vector[:5])
+        print("Updated query vector (first 5):", updated_query[:5])
+
         # Normalize the updated query vector
         updated_query_norm = normalize(updated_query.reshape(1, -1))[0]
         
         # Find papers similar to the updated query
         scores = updated_query_norm @ document_vectors_normalized.T
+
+        print(f"Center vector: {center_vector[:5]}")
+        print(f"Num relevant: {len(relevant_vectors)}")
+        print(f"Num non-relevant: {len(nonrelevant_vectors)}")
+        print(f"Updated query (first 5): {updated_query[:5]}")
+        print(f"Normalized query (first 5): {updated_query_norm[:5]}")
+        print(f"Scores shape: {scores.shape}")
         
         # Get top papers, excluding center and already selected papers
         exclude_ids = [center_id] + selected_ids
