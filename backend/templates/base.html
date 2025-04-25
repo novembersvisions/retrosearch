@@ -240,28 +240,81 @@
         function keywordHighlight() {
             const raw = document.getElementById("keyword-search-bar").value.toLowerCase().trim();
             const keywords = raw.split(/[\s,]+/).filter(k => k);
-            if (keywords.length === 0) {
-                document.querySelectorAll(".result-item")
-                    .forEach(item => item.style.borderLeftColor = "");
-                return;
-            }
-
+            
+            // Reset all items first
+            document.querySelectorAll(".result-item").forEach(item => {
+                item.style.borderLeftColor = "#ff3333"; // Reset to default red
+                item.classList.remove("result-item-highlighted");
+                
+                // Remove any highlight markers
+                const highlightMarker = item.querySelector(".highlight-marker");
+                if (highlightMarker) {
+                    highlightMarker.remove();
+                }
+            });
+            
+            // If no keywords, exit early
+            if (keywords.length === 0) return;
 
             const resultItems = document.querySelectorAll(".result-item");
 
             resultItems.forEach(item => {
                 const abstractEl = item.querySelector(".abstract");
+                const titleEl = item.querySelector(".paper-title");
                 const abstractText = abstractEl.textContent.toLowerCase();
+                const titleText = titleEl.textContent.toLowerCase();
 
-                const hasAllKeywords = keywords.every(k => abstractText.includes(k));
+                const hasAllKeywords = keywords.every(k => abstractText.includes(k) || titleText.includes(k));
 
                 if (hasAllKeywords) {
-                    item.style.borderLeftColor = "green";
-                } else {
-                    item.style.borderLeftColor = "";
+                    // Apply the highlighting class
+                    item.classList.add("result-item-highlighted");
+                    
+                    // Create and add the highlight marker
+                    const marker = document.createElement("div");
+                    marker.className = "highlight-marker";
+                    marker.innerHTML = `<span>Matches${keywords.length > 1 ? ' all' : ''} keyword${keywords.length > 1 ? 's' : ''}</span>`;
+                    
+                    // Insert after the title
+                    titleEl.parentNode.insertBefore(marker, titleEl.nextSibling);
                 }
             });
         }
+        // Add CSS to the document
+        const style = document.createElement('style');
+        style.textContent = `
+        .result-item-highlighted {
+            border-left: 4px solid #ff6666 !important;
+            background-color: rgba(50, 30, 30, 0.9) !important;
+            box-shadow: 0 6px 25px rgba(255, 51, 51, 0.25) !important;
+            position: relative;
+            animation: pulseShadow 2s infinite alternate;
+        }
+
+        .highlight-marker {
+            display: inline-block;
+            background-color: rgba(255, 51, 51, 0.15);
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            font-family: 'Montserrat', sans-serif;
+            color: #ff6666;
+            border: 1px solid rgba(255, 51, 51, 0.3);
+        }
+
+        @keyframes pulseShadow {
+            0% { box-shadow: 0 6px 25px rgba(255, 51, 51, 0.25); }
+            100% { box-shadow: 0 8px 30px rgba(255, 51, 51, 0.4); }
+        }
+        `;
+        document.head.appendChild(style);
+
+        // Make sure to use the updated function
+        document.addEventListener('DOMContentLoaded', () => {
+            const kwInput = document.getElementById('keyword-search-bar');
+            kwInput.addEventListener('input', debounce(keywordHighlight, 200));
+        });
     </script>
 </body>
 
