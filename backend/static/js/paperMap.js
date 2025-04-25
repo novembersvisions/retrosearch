@@ -59,6 +59,66 @@ class MultiClusterMap {
     }
 
     //--------------------------------------
+    //  KEYWORD HIGHLIGHT FUNCTIONALITY
+    //--------------------------------------
+    keywordHighlightMap(searchInput) {
+        // Store reference to this class instance
+        const self = this;
+        
+        // Parse input to get keywords
+        const raw = searchInput.toLowerCase().trim();
+        const keywords = raw.split(/[\s,]+/).filter(k => k);
+        
+        // First, reset all nodes to their original state
+        d3.selectAll(".paper-node-group").each(function(d) {
+            const node = d3.select(this);
+            
+            // Reset the fill color to the color determined by the class method
+            node.select("circle").attr("fill", d.originalColor || self.getNodeColor(d));
+            
+            // Remove any highlight rings
+            node.select(".highlight-ring").remove();
+            
+            // Reset stroke to default
+            node.select("circle")
+                .attr("stroke", "#333")
+                .attr("stroke-width", 1.5);
+        });
+        
+        if (keywords.length === 0) return;
+        
+        // Apply a subtle highlight to matching nodes
+        d3.selectAll(".paper-node-group").each(function(d) {
+            const node = d3.select(this);
+            const paper = d;
+            
+            const abstract = (paper.abstract || "").toLowerCase();
+            const title = (paper.title || "").toLowerCase();
+            const hasAll = keywords.every(k => abstract.includes(k) || title.includes(k));
+            
+            if (hasAll) {
+                // Apply a more elegant highlight effect
+                node.select("circle")
+                    .attr("stroke", "#ffcc00")
+                    .attr("stroke-width", 3)
+                    .style("filter", "drop-shadow(0 0 5px rgba(255, 204, 0, 0.5))");
+                    
+                // Add an animated highlight ring
+                const currentRadius = parseFloat(node.select("circle").attr("r"));
+                node.append("circle")
+                    .attr("class", "highlight-ring")
+                    .attr("cx", 0)
+                    .attr("cy", 0)
+                    .attr("r", currentRadius + 5)
+                    .attr("fill", "none")
+                    .attr("stroke", "#ffcc00")
+                    .attr("stroke-width", 2)
+                    .attr("stroke-opacity", 0.7);
+            }
+        });
+    }
+
+    //--------------------------------------
     //  MAIN SEARCH -> BUILD FIRST CLUSTER
     //--------------------------------------
     async fetchData(query) {
@@ -710,8 +770,8 @@ class MultiClusterMap {
 
         // Re-establish the inter-cluster forces now that we have a new cluster
         this.setupGlobalForces();
-        if (typeof keywordHighlightMap === "function") {
-            keywordHighlightMap();
+        if (document.getElementById('keyword-search-bar').value.trim()) {
+            this.keywordHighlightMap(document.getElementById('keyword-search-bar').value);
         }
 
         return this.clusters[this.clusters.length - 1]; // Return the created cluster

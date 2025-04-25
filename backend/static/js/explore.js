@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         authorityNodeRadius: 7,
         centerNodeRadius: 10,
         linkDistance: 1000,  // Reduced for more compact layout
-        charge: -300,  // Adjusted force to prevent overcrowding
+        charge: -500,  // Adjusted force to prevent overcrowding
         centerForce: 0.03,
         clusters: {
             'Machine Learning': { color: '#FF5555', x: 0.3, y: 0.3 },
@@ -1030,8 +1030,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Center the view on a specific node
     function centerOnNode(node) {
         const scale = state.zoom.scale();
-        const x = -node.x * scale + GALAXY_CONFIG.width / 2;
-        const y = -node.y * scale + GALAXY_CONFIG.height / 2;
+        const x = -node.x * scale + GALAXY_CONFIG.width * 2;
+        const y = -node.y * scale + GALAXY_CONFIG.height * 2;
         
         state.svg.transition()
             .duration(750)

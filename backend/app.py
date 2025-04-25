@@ -15,6 +15,7 @@ from sklearn.preprocessing import normalize
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
 from scipy import sparse
+import gzip
 
 def modified_sigmoid(x):
     """
@@ -1001,12 +1002,12 @@ def create_guided_journeys(papers):
 precompute_dir = os.path.join(current_directory, 'precomputed')
 os.makedirs(precompute_dir, exist_ok=True)
 
-# File paths
-vectorizer_path = os.path.join(precompute_dir, 'tfidf_vectorizer.pkl')
+# File paths (modified to include compression options)
+vectorizer_path = os.path.join(precompute_dir, 'tfidf_vectorizer.pkl.gz')
 tfidf_matrix_path = os.path.join(precompute_dir, 'tfidf_matrix.npz')
-svd_path = os.path.join(precompute_dir, 'svd_model.pkl')
-document_vectors_path = os.path.join(precompute_dir, 'document_vectors.npy')
-similarities_path = os.path.join(precompute_dir, 'similarities.pkl')
+svd_path = os.path.join(precompute_dir, 'svd_model.pkl.gz')
+document_vectors_path = os.path.join(precompute_dir, 'document_vectors.npz')  # Changed from .npy to .npz
+similarities_path = os.path.join(precompute_dir, 'similarities.pkl.gz')
 precompute_hash_path = os.path.join(precompute_dir, 'data_hash.txt')
 
 # Compute data hash
@@ -1022,39 +1023,66 @@ else:
     recompute = True
 
 if not recompute and all(os.path.exists(p) for p in [vectorizer_path, tfidf_matrix_path, svd_path, document_vectors_path, similarities_path]):
-    # Load precomputed data
-    with open(vectorizer_path, 'rb') as f:
-        vectorizer = pickle.load(f)
-    tfidf_matrix = sparse.load_npz(tfidf_matrix_path)
-    with open(svd_path, 'rb') as f:
-        svd = pickle.load(f)
-    document_vectors_normalized = np.load(document_vectors_path)
-    with open(similarities_path, 'rb') as f:
-        paper_similarities = pickle.load(f)
-    print("Loaded precomputed SVD components and similarities")
+    # Load precomputed data with compression
+    try:
+        print("Loading precomputed SVD components and similarities...")
+        
+        # Load vectorizer with gzip compression
+        with gzip.open(vectorizer_path, 'rb') as f:
+            vectorizer = pickle.load(f)
+            
+        # Load sparse tfidf matrix
+        tfidf_matrix = sparse.load_npz(tfidf_matrix_path)
+        
+        # Load SVD model with gzip compression
+        with gzip.open(svd_path, 'rb') as f:
+            svd = pickle.load(f)
+            
+        # Load document vectors as sparse matrix
+        document_vectors_data = np.load(document_vectors_path, allow_pickle=True)
+        if isinstance(document_vectors_data, np.ndarray):
+            document_vectors_normalized = document_vectors_data
+        else:
+            # Handle the case when it's stored as a sparse matrix
+            document_vectors_normalized = document_vectors_data['arr_0']
+            
+        # Load paper similarities with gzip compression
+        with gzip.open(similarities_path, 'rb') as f:
+            paper_similarities = pickle.load(f)
+            
+        print("Successfully loaded precomputed data")
+        
+    except Exception as e:
+        print(f"Error loading precomputed data: {str(e)}")
+        recompute = True
 else:
-    # Recompute everything
+    recompute = True
+
+if recompute:
+    # Recompute everything with optimized storage
     print("Precomputing TF-IDF components and similarities...")
     texts = [f"{doc.get('title','')} {doc['abstract']}" for doc in data]
     
     # TF-IDF Vectorizer
     vectorizer = TfidfVectorizer(
-     stop_words='english',
-     max_df=0.7,
-     min_df=1,           
-     ngram_range=(1,2)     
-     )
+        stop_words='english',
+        max_df=0.7,
+        min_df=1,           
+        ngram_range=(1,2)     
+    )
     
     texts = [f"{doc.get('title','')} {doc['abstract']}" for doc in data]
     tfidf_matrix = vectorizer.fit_transform(texts)
     
-    with open(vectorizer_path, 'wb') as f:
+    # Save vectorizer with compression
+    with gzip.open(vectorizer_path, 'wb') as f:
         pickle.dump(vectorizer, f)
-        
-        sparse.save_npz(tfidf_matrix_path, tfidf_matrix)
-        
-    # Truncated SVD
-    n_components = 100
+    
+    # Save tfidf matrix as sparse
+    sparse.save_npz(tfidf_matrix_path, tfidf_matrix)
+    
+    # Truncated SVD - optimization: reduce number of components if needed
+    n_components = 100  # Consider reducing this if the file is still too large
     svd = TruncatedSVD(n_components=n_components, random_state=42)
     document_vectors = svd.fit_transform(tfidf_matrix)
     document_vectors_normalized = normalize(document_vectors, axis=1)
@@ -1064,31 +1092,51 @@ else:
     nn.fit(document_vectors_normalized)
     distances, indices = nn.kneighbors(document_vectors_normalized)
     
+    # Generate paper similarities with minimal data
     paper_similarities = []
     for i in range(len(indices)):
         similar_indices = indices[i][1:]  # Exclude self
         similar_scores = 1 - distances[i][1:]
-        similar_papers = [{
-            "id": idx,
-            "original_id": idx,
-            "title": data[idx]['title'],
-            "abstract": data[idx]['abstract'],
-            "link": data[idx]['link'],
-            "score": score
-        } for idx, score in zip(similar_indices, similar_scores)][:15]
+        # Store only necessary data (reduce redundancy)
+        similar_papers = []
+        for idx, score in zip(similar_indices, similar_scores):
+            if len(similar_papers) >= 15:  # Limit to 15 similar papers
+                break
+                
+            similar_papers.append({
+                "id": idx,
+                "original_id": idx,
+                "title": data[idx]['title'],
+                # Store a truncated abstract (first 200 chars) to save space
+                "abstract": data[idx]['abstract'][:200] + ('...' if len(data[idx]['abstract']) > 200 else ''),
+                "link": data[idx]['link'],
+                "score": float(score)  # Ensure it's a native Python float
+            })
         paper_similarities.append(similar_papers)
     
-    # Save precomputed data
-    with open(vectorizer_path, 'wb') as f:
-        pickle.dump(vectorizer, f)
-    with open(svd_path, 'wb') as f:
+    # Save SVD model with compression
+    with gzip.open(svd_path, 'wb') as f:
         pickle.dump(svd, f)
-    np.save(document_vectors_path, document_vectors_normalized)
-    with open(similarities_path, 'wb') as f:
+    
+    # Save document vectors as sparse matrix to save space
+    # Check if document_vectors_normalized is sparse enough to benefit from sparse storage
+    sparsity = 1.0 - np.count_nonzero(document_vectors_normalized) / document_vectors_normalized.size
+    if sparsity > 0.5:  # If matrix is at least 50% sparse
+        sparse_doc_vectors = sparse.csr_matrix(document_vectors_normalized)
+        sparse.save_npz(document_vectors_path, sparse_doc_vectors)
+    else:
+        # Save as compressed numpy array
+        np.savez_compressed(document_vectors_path, document_vectors_normalized)
+    
+    # Save similarities with compression
+    with gzip.open(similarities_path, 'wb') as f:
         pickle.dump(paper_similarities, f)
+    
+    # Save hash
     with open(precompute_hash_path, 'w') as f:
         f.write(data_hash)
-    print("Precomputation complete")
+        
+    print("Precomputation complete with optimized storage")
     
 def process_citation_network(papers_data):
     """
