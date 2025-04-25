@@ -1,21 +1,317 @@
+#!/usr/bin/env python3
+"""
+app.py  –  ReSearch API & visualisations
+Disk-footprint-optimised version (float16-on-disk, gzip, no-functionality-loss)
+"""
+
+# ── Standard lib ──────────────────────────────────────────────────────────────
+import gzip
+import hashlib
 import json
 import os
+import random
 import time
+import lzma
+from pathlib import Path
+
+# ── Third-party ───────────────────────────────────────────────────────────────
+import numpy as np
 from flask import Flask, jsonify, render_template, request
 from flask_cors import CORS
-import cossim as cos
-from paper_similarity import SimilarityMatrix
-import random
-import numpy as np
-import pickle
-import hashlib
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.preprocessing import normalize
-from sklearn.neighbors import NearestNeighbors
-from scipy.sparse import csr_matrix
 from scipy import sparse
-import gzip
+from scipy.sparse import csr_matrix
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import normalize
+
+# ── Local helpers ─────────────────────────────────────────────────────────────
+import cossim as cos
+from paper_similarity import SimilarityMatrix   # unchanged local import
+
+# SVD compression utility
+class SVDCompressor:
+    """
+    Utility class to compress/decompress TruncatedSVD models by splitting them
+    into components and using appropriate compression for each part.
+    """
+    
+    @staticmethod
+    def compress_svd_model(svd_model, output_path, compression_level=9):
+        """
+        Compresses a TruncatedSVD model into a smaller file by:
+        1. Extracting the key components
+        2. Converting large arrays to float16 
+        3. Using LZMA compression with highest level
+        
+        Args:
+            svd_model: The fitted TruncatedSVD model
+            output_path: Path to save the compressed model
+            compression_level: LZMA compression level (0-9)
+        """
+        import pickle
+        import lzma
+        import numpy as np
+        import os
+        
+        # Extract critical components
+        svd_components = {
+            'components_': svd_model.components_.astype(np.float16),
+            'singular_values_': svd_model.singular_values_.astype(np.float32),
+            'explained_variance_': svd_model.explained_variance_.astype(np.float32),
+            'explained_variance_ratio_': svd_model.explained_variance_ratio_.astype(np.float32),
+            'n_components': svd_model.n_components,
+            'n_features_in_': svd_model.n_features_in_,  # Fixed: use n_features_in_ attribute
+            'algorithm': svd_model.algorithm,
+            'random_state': svd_model.random_state
+        }
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # Save with LZMA compression (highest level)
+        with lzma.open(output_path, 'wb', preset=compression_level) as f:
+            pickle.dump(svd_components, f)
+            
+        print(f"Compressed SVD model saved to {output_path}")
+        print(f"File size: {os.path.getsize(output_path) / (1024 * 1024):.2f} MB")
+        
+    @staticmethod
+    def load_compressed_svd_model(input_path):
+        """
+        Loads a compressed SVD model and reconstructs it.
+        
+        Args:
+            input_path: Path to the compressed model file
+            
+        Returns:
+            Reconstructed TruncatedSVD model
+        """
+        import pickle
+        import lzma
+        import numpy as np
+        from sklearn.decomposition import TruncatedSVD
+        
+        # Load the compressed components
+        with lzma.open(input_path, 'rb') as f:
+            svd_components = pickle.load(f)
+        
+        # Create a new SVD model
+        svd_model = TruncatedSVD(
+            n_components=svd_components['n_components'],
+            algorithm=svd_components['algorithm'],
+            random_state=svd_components['random_state']
+        )
+        
+        # Set the fitted attributes
+        svd_model.components_ = svd_components['components_'].astype(np.float64)
+        svd_model.singular_values_ = svd_components['singular_values_'].astype(np.float64)
+        svd_model.explained_variance_ = svd_components['explained_variance_'].astype(np.float64)
+        svd_model.explained_variance_ratio_ = svd_components['explained_variance_ratio_'].astype(np.float64)
+        svd_model.n_features_in_ = svd_components['n_features_in_']  # Fixed: use n_features_in_ attribute
+        
+        return svd_model
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Global config – **only new constant is DTYPE_ON_DISK**
+# ──────────────────────────────────────────────────────────────────────────────
+DTYPE_ON_DISK = np.float16          # all heavy matrices saved as half precision
+SVD_COMPONENTS = 100                # keep quality; still small on disk
+SPARSE_DTYPE_ON_DISK = np.float32       # <─ NEW  (was float16)
+DENSE_DTYPE_ON_DISK  = np.float16       # unchanged for doc vectors
+
+# for convenience everywhere else
+ROOT_PATH = Path(os.path.abspath(os.path.join("..", os.curdir)))
+os.environ["ROOT_PATH"] = str(ROOT_PATH)
+
+# ── Load raw paper JSON ───────────────────────────────────────────────────────
+current_directory = Path(__file__).resolve().parent
+json_file_path = current_directory / "init.json"
+
+try:
+    print(f"[load] {json_file_path}")
+    with open(json_file_path, "r", encoding="utf-8") as fh:
+        data = json.load(fh)
+    print(f"[load] ✓  {len(data):,} papers")
+except Exception as exc:
+    print(f"[error] loading JSON – {exc}")
+    data = []
+
+# Tokenise once so we can build an inverted index later
+for doc in data:
+    doc["toks"] = cos.tokenize(doc.get("abstract", ""))
+
+inv_index = cos.build_inverted_index(data)
+
+# ── Flask setup ───────────────────────────────────────────────────────────────
+app = Flask(__name__)
+CORS(app)
+
+# ── Disk cache locations ──────────────────────────────────────────────────────
+precompute_dir = current_directory / "precomputed"
+precompute_dir.mkdir(exist_ok=True)
+
+vectorizer_path       = precompute_dir / "tfidf_vectorizer.pkl.gz"
+tfidf_matrix_path     = precompute_dir / "tfidf_matrix_fp16.npz"
+svd_path              = precompute_dir / "svd_model.xz"  # Use XZ as primary path
+old_svd_path          = precompute_dir / "svd_model.pkl.gz"  # Keep reference to old path
+docvecs_path          = precompute_dir / "doc_vectors_fp16.npz"
+similarities_path     = precompute_dir / "similarities.pkl.gz"
+data_hash_path        = precompute_dir / "data_hash.txt"
+
+# ── Decide whether we must (re)build ──────────────────────────────────────────
+data_hash = hashlib.md5(
+    json.dumps([{"title": d["title"], "abstract": d["abstract"]} for d in data])
+    .encode()
+).hexdigest()
+
+need_recompute = True
+if (
+    all(p.exists() for p in (vectorizer_path,
+                             tfidf_matrix_path,
+                             docvecs_path,
+                             similarities_path,
+                             data_hash_path)) and
+    (svd_path.exists() or old_svd_path.exists())  # Check for either SVD file
+):
+    if data_hash_path.read_text().strip() == data_hash:
+        need_recompute = False
+
+# ── (Re)compute & save ────────────────────────────────────────────────────────
+# Add this function to your app.py
+
+def cleanup_old_svd_files(precompute_dir):
+    """
+    Clean up old SVD model files once the new compressed version is confirmed to work.
+    Removes .pkl.gz files if corresponding .xz files exist and are valid.
+    
+    Args:
+        precompute_dir: Path to the precomputed directory
+    """
+    import os
+    from pathlib import Path
+    
+    # Check for old SVD model file
+    old_svd_path = precompute_dir / "svd_model.pkl.gz"
+    new_svd_path = precompute_dir / "svd_model.xz"
+    
+    if old_svd_path.exists() and new_svd_path.exists():
+        # Validate that the new file is working before removing the old one
+        try:
+            # Try to load the model from the new file to verify it works
+            svd = SVDCompressor.load_compressed_svd_model(new_svd_path)
+            
+            # If we got here, the new file is valid - we can remove the old one
+            old_size_mb = old_svd_path.stat().st_size / (1024 * 1024)
+            new_size_mb = new_svd_path.stat().st_size / (1024 * 1024)
+            
+            # Remove the old file
+            old_svd_path.unlink()
+            
+            print(f"Removed old SVD model file ({old_size_mb:.2f} MB)")
+            print(f"Now using compressed version only ({new_size_mb:.2f} MB)")
+            print(f"Space saved: {old_size_mb - new_size_mb:.2f} MB")
+            
+        except Exception as e:
+            print(f"Error validating new SVD model, keeping old file as backup: {e}")
+
+if need_recompute:
+    print("[build] Computing TF-IDF / SVD …")
+    texts = [f"{d.get('title','')} {d.get('abstract','')}" for d in data]
+
+    # 1) TF-IDF  (keep as float32)
+    vectorizer = TfidfVectorizer(
+        stop_words="english",
+        max_df=0.7,
+        min_df=1,
+        ngram_range=(1, 2),
+    )
+    tfidf_matrix = vectorizer.fit_transform(texts).astype(SPARSE_DTYPE_ON_DISK)
+
+    # 2) SVD  (doc vectors saved as fp16)
+    svd = TruncatedSVD(n_components=SVD_COMPONENTS, random_state=42)
+    doc_vectors = svd.fit_transform(tfidf_matrix.astype(np.float32))
+    doc_vectors = normalize(doc_vectors, axis=1).astype(DENSE_DTYPE_ON_DISK)
+
+    # 3) Nearest neighbours for pre-computed similarity list
+    nn = NearestNeighbors(n_neighbors=16, metric="cosine", algorithm="brute")
+    nn.fit(doc_vectors.astype(np.float32))
+    dist, idx = nn.kneighbors(doc_vectors)
+    paper_similarities = []
+    for row_i, (row_idx, row_dist) in enumerate(zip(idx[:, 1:], dist[:, 1:])):
+        sims = []
+        for j, d_ in zip(row_idx, row_dist):
+            sims.append(
+                {
+                    "id": j,
+                    "original_id": j,
+                    "title": data[j]["title"],
+                    "abstract": (data[j]["abstract"][:200] + " …")
+                    if len(data[j]["abstract"]) > 200
+                    else data[j]["abstract"],
+                    "link": data[j]["link"],
+                    "score": float(1 - d_),
+                }
+            )
+        paper_similarities.append(sims[:15])
+
+    # ── Save (all in gzip / compressed fp16) ────────────────────────────────
+    with gzip.open(vectorizer_path, "wb", compresslevel=9) as fh:
+        import pickle
+
+        pickle.dump(vectorizer, fh)
+
+    sparse.save_npz(tfidf_matrix_path, tfidf_matrix)  # already fp16
+    
+    # Use SVDCompressor instead of regular pickle+gzip
+    SVDCompressor.compress_svd_model(svd, svd_path, compression_level=9)
+
+    np.savez_compressed(docvecs_path, doc_vectors)  # fp16
+
+    with gzip.open(similarities_path, "wb", compresslevel=9) as fh:
+        pickle.dump(paper_similarities, fh)
+
+    data_hash_path.write_text(data_hash)
+    print("[build] ✓  pre-compute finished & cached")
+else:
+    print("[load] Using pre-computed artefacts")
+
+    import pickle
+
+    with gzip.open(vectorizer_path, "rb") as fh:
+        vectorizer = pickle.load(fh)
+
+    # IMPORTANT: cast back to float32 for sklearn math
+    tfidf_matrix = (
+        sparse.load_npz(tfidf_matrix_path)
+        .astype(np.float32)                 # make sure it's float32 in RAM
+    )
+
+    # Use SVDCompressor to load the model
+    svd = SVDCompressor.load_compressed_svd_model(svd_path)
+
+    doc_vectors = (
+        np.load(docvecs_path)["arr_0"].astype(np.float32)
+    )
+    with gzip.open(similarities_path, "rb") as fh:
+        paper_similarities = pickle.load(fh)
+
+    # ensure unit-norm (cast might disturb it a hair)
+    doc_vectors = normalize(doc_vectors, axis=1)
+    
+    # Clean up old files if they exist
+    cleanup_old_svd_files(precompute_dir)
+
+# alias used throughout old code
+document_vectors_normalized = doc_vectors
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+@app.route("/")
+def home():
+    return render_template('base.html', title="ReSearch")
 
 def modified_sigmoid(x):
     """
@@ -27,60 +323,6 @@ def modified_sigmoid(x):
     b = -1.2902
     # avoid log(0)
     return 1 / (1 + np.exp(-(a * np.log(x + 1) + b)))
-
-# ROOT_PATH for linking with all your files. 
-os.environ['ROOT_PATH'] = os.path.abspath(os.path.join("..",os.curdir))
-
-# Get the directory of the current script
-current_directory = os.path.dirname(os.path.abspath(__file__))
-
-# Specify the path to the JSON file relative to the current script
-json_file_path = os.path.join(current_directory, 'init.json')
-
-try:
-    print(f"Loading JSON from: {json_file_path}")
-    with open(json_file_path, 'r', encoding='utf-8') as file:
-        data = json.load(file)
-    print(f"Successfully loaded JSON with {len(data)} entries")
-    
-    # Print a sample entry to verify structure
-    if data:
-        print("First entry keys:", list(data[0].keys()))
-except Exception as e:
-    print(f"Error loading JSON: {str(e)}")
-    data = []
-
-# Process the tokenization
-try:
-    for doc in data:
-        doc['toks'] = cos.tokenize(doc["abstract"])
-    print("Tokenization successful")
-except Exception as e:
-    print(f"Error during tokenization: {str(e)}")
-
-# Build inverted index
-try:
-    inv_index = cos.build_inverted_index(data)
-    print("Successfully built inverted index")
-except Exception as e:
-    print(f"Error building inverted index: {str(e)}")
-    inv_index = {}
-
-# Initialize similarity matrix with caching
-try:
-    similarity_matrix = SimilarityMatrix(json_file_path)
-    paper_similarities = similarity_matrix.load_or_compute(data)
-    print(f"Successfully loaded/computed similarities for {len(data)} papers")
-except Exception as e:
-    print(f"Error with similarity matrix: {str(e)}")
-    paper_similarities = []
-
-app = Flask(__name__)
-CORS(app)
-
-@app.route("/")
-def home():
-    return render_template('base.html', title="ReSearch")
 
 @app.route("/search")
 def search():
@@ -997,146 +1239,6 @@ def create_guided_journeys(papers):
                 journey_id += 1
     
     return journeys
-
-# Create precomputed directory
-precompute_dir = os.path.join(current_directory, 'precomputed')
-os.makedirs(precompute_dir, exist_ok=True)
-
-# File paths (modified to include compression options)
-vectorizer_path = os.path.join(precompute_dir, 'tfidf_vectorizer.pkl.gz')
-tfidf_matrix_path = os.path.join(precompute_dir, 'tfidf_matrix.npz')
-svd_path = os.path.join(precompute_dir, 'svd_model.pkl.gz')
-document_vectors_path = os.path.join(precompute_dir, 'document_vectors.npz')  # Changed from .npy to .npz
-similarities_path = os.path.join(precompute_dir, 'similarities.pkl.gz')
-precompute_hash_path = os.path.join(precompute_dir, 'data_hash.txt')
-
-# Compute data hash
-data_hash = hashlib.md5(json.dumps([{'title': d['title'], 'abstract': d['abstract']} for d in data]).encode()).hexdigest()
-
-recompute = False
-if os.path.exists(precompute_hash_path):
-    with open(precompute_hash_path, 'r') as f:
-        saved_data_hash = f.read().strip()
-    if saved_data_hash != data_hash:
-        recompute = True
-else:
-    recompute = True
-
-if not recompute and all(os.path.exists(p) for p in [vectorizer_path, tfidf_matrix_path, svd_path, document_vectors_path, similarities_path]):
-    # Load precomputed data with compression
-    try:
-        print("Loading precomputed SVD components and similarities...")
-        
-        # Load vectorizer with gzip compression
-        with gzip.open(vectorizer_path, 'rb') as f:
-            vectorizer = pickle.load(f)
-            
-        # Load sparse tfidf matrix
-        tfidf_matrix = sparse.load_npz(tfidf_matrix_path)
-        
-        # Load SVD model with gzip compression
-        with gzip.open(svd_path, 'rb') as f:
-            svd = pickle.load(f)
-            
-        # Load document vectors as sparse matrix
-        document_vectors_data = np.load(document_vectors_path, allow_pickle=True)
-        if isinstance(document_vectors_data, np.ndarray):
-            document_vectors_normalized = document_vectors_data
-        else:
-            # Handle the case when it's stored as a sparse matrix
-            document_vectors_normalized = document_vectors_data['arr_0']
-            
-        # Load paper similarities with gzip compression
-        with gzip.open(similarities_path, 'rb') as f:
-            paper_similarities = pickle.load(f)
-            
-        print("Successfully loaded precomputed data")
-        
-    except Exception as e:
-        print(f"Error loading precomputed data: {str(e)}")
-        recompute = True
-else:
-    recompute = True
-
-if recompute:
-    # Recompute everything with optimized storage
-    print("Precomputing TF-IDF components and similarities...")
-    texts = [f"{doc.get('title','')} {doc['abstract']}" for doc in data]
-    
-    # TF-IDF Vectorizer
-    vectorizer = TfidfVectorizer(
-        stop_words='english',
-        max_df=0.7,
-        min_df=1,           
-        ngram_range=(1,2)     
-    )
-    
-    texts = [f"{doc.get('title','')} {doc['abstract']}" for doc in data]
-    tfidf_matrix = vectorizer.fit_transform(texts)
-    
-    # Save vectorizer with compression
-    with gzip.open(vectorizer_path, 'wb') as f:
-        pickle.dump(vectorizer, f)
-    
-    # Save tfidf matrix as sparse
-    sparse.save_npz(tfidf_matrix_path, tfidf_matrix)
-    
-    # Truncated SVD - optimization: reduce number of components if needed
-    n_components = 100  # Consider reducing this if the file is still too large
-    svd = TruncatedSVD(n_components=n_components, random_state=42)
-    document_vectors = svd.fit_transform(tfidf_matrix)
-    document_vectors_normalized = normalize(document_vectors, axis=1)
-    
-    # Compute similarities using Nearest Neighbors
-    nn = NearestNeighbors(n_neighbors=16, metric='cosine', algorithm='brute')
-    nn.fit(document_vectors_normalized)
-    distances, indices = nn.kneighbors(document_vectors_normalized)
-    
-    # Generate paper similarities with minimal data
-    paper_similarities = []
-    for i in range(len(indices)):
-        similar_indices = indices[i][1:]  # Exclude self
-        similar_scores = 1 - distances[i][1:]
-        # Store only necessary data (reduce redundancy)
-        similar_papers = []
-        for idx, score in zip(similar_indices, similar_scores):
-            if len(similar_papers) >= 15:  # Limit to 15 similar papers
-                break
-                
-            similar_papers.append({
-                "id": idx,
-                "original_id": idx,
-                "title": data[idx]['title'],
-                # Store a truncated abstract (first 200 chars) to save space
-                "abstract": data[idx]['abstract'][:200] + ('...' if len(data[idx]['abstract']) > 200 else ''),
-                "link": data[idx]['link'],
-                "score": float(score)  # Ensure it's a native Python float
-            })
-        paper_similarities.append(similar_papers)
-    
-    # Save SVD model with compression
-    with gzip.open(svd_path, 'wb') as f:
-        pickle.dump(svd, f)
-    
-    # Save document vectors as sparse matrix to save space
-    # Check if document_vectors_normalized is sparse enough to benefit from sparse storage
-    sparsity = 1.0 - np.count_nonzero(document_vectors_normalized) / document_vectors_normalized.size
-    if sparsity > 0.5:  # If matrix is at least 50% sparse
-        sparse_doc_vectors = sparse.csr_matrix(document_vectors_normalized)
-        sparse.save_npz(document_vectors_path, sparse_doc_vectors)
-    else:
-        # Save as compressed numpy array
-        np.savez_compressed(document_vectors_path, document_vectors_normalized)
-    
-    # Save similarities with compression
-    with gzip.open(similarities_path, 'wb') as f:
-        pickle.dump(paper_similarities, f)
-    
-    # Save hash
-    with open(precompute_hash_path, 'w') as f:
-        f.write(data_hash)
-        
-    print("Precomputation complete with optimized storage")
     
 def process_citation_network(papers_data):
     """

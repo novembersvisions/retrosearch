@@ -26,6 +26,5 @@ tzdata==2024.1
 Werkzeug==2.2.2
 scikit-learn
 scipy
-numpy
-pandas
-flask
+torch
+transformers
