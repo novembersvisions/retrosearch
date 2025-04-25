@@ -348,9 +348,91 @@ def explore_data():
     try:
         start_time = time.time()
         
-        # Get a sample of papers to display
-        sample_size = min(150, len(data))  # Limit to 150 papers for performance
-        sampled_papers = data[:sample_size]
+        # Get the maxPapers parameter from the request, default to 200 if not provided
+        max_papers = request.args.get("maxPapers", 200, type=int)
+        # Ensure we have a reasonable range
+        max_papers = max(50, min(max_papers, 500))  # Limit between 50 and 500
+        
+        print(f"Using maxPapers value: {max_papers}")
+        
+        # Find hub and authority papers first (to prioritize them)
+        # Process all papers to find potential hub-authority relationships
+        all_citation_network = process_citation_network(data)
+        
+        # Get indices of all hub and authority papers (from the original dataset)
+        all_hub_indices = [hub["index"] for hub in all_citation_network["hubs"]]
+        all_authority_indices = [auth["index"] for auth in all_citation_network["authorities"]]
+        
+        # Prioritize hub and authority papers for inclusion
+        prioritized_indices = list(set(all_hub_indices + all_authority_indices))
+        
+        # Ensure we don't exceed maxPapers with just the hub/authority papers
+        prioritized_indices = prioritized_indices[:max_papers]
+        
+        # Calculate remaining slots
+        remaining_slots = max_papers - len(prioritized_indices)
+        
+        # Group papers by tag for balanced sampling of the remaining slots
+        papers_by_tag = {}
+        for i, paper in enumerate(data):
+            # Skip if already included as hub/authority
+            if i in prioritized_indices:
+                continue
+                
+            tag = paper.get("tag", "general")
+            if tag not in papers_by_tag:
+                papers_by_tag[tag] = []
+            papers_by_tag[tag].append((i, paper))
+        
+        # Sample papers from each tag for the remaining slots
+        sampled_indices = list(prioritized_indices)  # Start with prioritized papers
+        
+        if remaining_slots > 0 and len(papers_by_tag) > 0:
+            # Calculate papers per tag for remaining slots
+            total_tags = len(papers_by_tag)
+            base_papers_per_tag = remaining_slots // total_tags
+            
+            # Distribute papers across tags
+            remaining = remaining_slots
+            for tag, tag_papers in papers_by_tag.items():
+                # Take either all papers in this tag or the fair allocation amount
+                take_count = min(len(tag_papers), base_papers_per_tag)
+                # Sort by citation count within each tag to prioritize important papers
+                tag_papers.sort(key=lambda x: x[1].get("citation_count", 0), reverse=True)
+                tag_samples = tag_papers[:take_count]
+                sampled_indices.extend([i for i, _ in tag_samples])
+                remaining -= take_count
+            
+            # If we still have slots remaining, fill with papers from any tag (prioritizing by citation count)
+            if remaining > 0:
+                all_remaining = []
+                for tag, tag_papers in papers_by_tag.items():
+                    all_remaining.extend([(i, p) for i, p in tag_papers if i not in sampled_indices])
+                
+                # Sort remaining by citation count
+                all_remaining.sort(key=lambda x: x[1].get("citation_count", 0), reverse=True)
+                
+                # Add remaining papers
+                for i, _ in all_remaining[:remaining]:
+                    if i not in sampled_indices:
+                        sampled_indices.append(i)
+        
+        # If algorithm failed or there are no tags, fall back to simple sampling
+        if not sampled_indices:
+            sampled_indices = list(range(min(max_papers, len(data))))
+        
+        # Ensure we don't exceed maxPapers
+        sampled_indices = sampled_indices[:max_papers]
+        
+        # Get the sampled papers
+        sampled_papers = [data[i] for i in sampled_indices]
+        
+        # Process citation network to find hubs and authorities
+        citation_network = process_citation_network(sampled_papers)
+        
+        # Create lookup sets for quick checking
+        hub_indices = {hub["index"] for hub in citation_network["hubs"]}
+        authority_indices = {auth["index"] for auth in citation_network["authorities"]}
         
         # Prepare paper data for visualization
         papers = []
@@ -359,6 +441,11 @@ def explore_data():
             title = paper.get("title", "Untitled Paper")
             abstract = paper.get("abstract", "No abstract available")
             link = paper.get("link", "#")
+            citations = paper.get("citation_count", random.randint(0, 100))
+            
+            # Determine if this paper is a hub or authority
+            is_hub = i in hub_indices
+            is_authority = i in authority_indices
             
             # Create a paper object with the fields needed by the visualization
             paper_obj = {
@@ -367,51 +454,139 @@ def explore_data():
                 "abstract": abstract,
                 "authors": paper.get("authors", "Unknown Author"),
                 "year": paper.get("year", 2023),
-                "citations": paper.get("citations", random.randint(0, 2000)),  # Random citation count if not present
+                "citations": citations,
                 "link": link,
-                "cluster": determine_cluster(title, abstract),
+                "cluster": determine_cluster(title, abstract, paper.get("tag", "")),
                 "readingLevel": determine_reading_level(abstract),
-                "related": []  # Will be populated with related paper IDs
+                "related": [],
+                "isHub": is_hub,
+                "isAuthority": is_authority,
+                "tag": paper.get("tag", "general"),
+                "originalIndex": i  # Store the original index for edge mapping
             }
             
             papers.append(paper_obj)
         
-        # Add related papers based on similarity
+        # Add related papers based on hub-authority relationships first, then similarity
         for i, paper in enumerate(papers):
-            if i < len(paper_similarities):
+            related_ids = set()  # Use a set to avoid duplicates
+            
+            # First add hub-authority relationships
+            for edge in citation_network["edges"]:
+                if edge["source"] == paper["originalIndex"]:
+                    related_ids.add(f"paper-{edge['target']}")
+                elif edge["target"] == paper["originalIndex"]:
+                    related_ids.add(f"paper-{edge['source']}")
+            
+            # Then supplement with similarity relationships if needed
+            orig_index = sampled_indices[i]
+            if len(related_ids) < 3 and orig_index < len(paper_similarities):
                 # Get similar papers
-                similar_papers = paper_similarities[i][:5]  # Limit to top 5 for simplicity
-                related_ids = []
+                similar_papers = paper_similarities[orig_index][:5]  # Limit to top 5 for simplicity
                 
                 for similar in similar_papers:
                     similar_id = similar.get("original_id")
-                    if similar_id is not None and similar_id < len(papers):
-                        related_ids.append(f"paper-{similar_id}")
-                
-                paper["related"] = related_ids
-            else:
-                # If no similarities, add some random connections
+                    # Convert original ID to the ID in our sampled set
+                    if similar_id is not None and similar_id in sampled_indices:
+                        sampled_idx = sampled_indices.index(similar_id)
+                        related_id = f"paper-{sampled_idx}"
+                        if related_id not in related_ids:  # Avoid duplicates
+                            related_ids.add(related_id)
+                            if len(related_ids) >= 5:  # Limit to 5 relations total
+                                break
+            
+            # If still no relations, add some random connections
+            if not related_ids:
                 count = min(3, len(papers) - 1)
                 random_indices = random.sample([j for j in range(len(papers)) if j != i], count)
-                paper["related"] = [f"paper-{j}" for j in random_indices]
+                related_ids = set([f"paper-{j}" for j in random_indices])
+            
+            paper["related"] = list(related_ids)
         
-        # Create guided journeys
-        journeys = create_guided_journeys(papers)
+        # Add hub-authority edges explicitly
+        hub_authority_links = []
+        for edge in citation_network["edges"]:
+            hub_authority_links.append({
+                "source": f"paper-{edge['source']}",
+                "target": f"paper-{edge['target']}",
+                "type": "citation"
+            })
+        
+        # Create guided journeys (limited to 5)
+        all_journeys = create_guided_journeys(papers)
+        # Select only the top 5 journeys
+        journeys = select_top_journeys(all_journeys, 5)
         
         # Format data for the visualization
         explore_data = {
             "papers": papers,
-            "journeys": journeys
+            "journeys": journeys,
+            "hubAuthorityLinks": hub_authority_links
         }
         
         end_time = time.time()
-        print(f"Explore data generated in {end_time - start_time:.2f} seconds")
+        print(f"Explore data generated in {end_time - start_time:.2f} seconds with {len(papers)} papers and {len(journeys)} journeys")
         
         explore_data = convert_to_serializable(explore_data)
         return jsonify(explore_data)
     except Exception as e:
         print(f"Error generating explore data: {str(e)}")
         return jsonify({"papers": [], "journeys": [], "error": str(e)})
+    
+def select_top_journeys(journeys, max_count=5):
+    """
+    Select a diverse set of top journeys, limited to max_count
+    
+    Strategy:
+    1. Prioritize journeys with hub-authority papers
+    2. Ensure diversity across clusters
+    3. Ensure diversity across journey types
+    4. If still more than max_count, prioritize by citation counts of included papers
+    """
+    if not journeys or len(journeys) <= max_count:
+        return journeys
+    
+    # Step 1: Score each journey
+    for journey in journeys:
+        # Initialize score (will be used for final ranking)
+        journey['score'] = 0
+        
+        # Check if title contains "Citation Influence" (hub-authority journey)
+        if "Influencial Papers" in journey.get('title', ''):
+            journey['score'] += 10  # Highest priority
+        
+        # Bonus for recent developments
+        if "Recent Advances" in journey.get('title', ''):
+            journey['score'] += 5
+            
+        # Bonus for evolution journeys
+        if "Evolution" in journey.get('title', ''):
+            journey['score'] += 3
+    
+    # Step 2: Ensure cluster diversity by picking top journey from each cluster
+    selected_journeys = []
+    clusters_selected = set()
+    
+    # Sort by score (highest first)
+    sorted_journeys = sorted(journeys, key=lambda j: j.get('score', 0), reverse=True)
+    
+    # First pass: Select one journey from each cluster (until max_count is reached)
+    for journey in sorted_journeys:
+        cluster = journey.get('domain')
+        if cluster not in clusters_selected and len(selected_journeys) < max_count:
+            selected_journeys.append(journey)
+            clusters_selected.add(cluster)
+    
+    # If we still have room, add more journeys based on score
+    remaining_slots = max_count - len(selected_journeys)
+    if remaining_slots > 0:
+        # Get journeys not already selected
+        remaining_journeys = [j for j in sorted_journeys if j not in selected_journeys]
+        # Add top scoring remaining journeys
+        selected_journeys.extend(remaining_journeys[:remaining_slots])
+    
+    # Ensure we don't exceed max_count
+    return selected_journeys[:max_count]
     
 @app.route("/reinforce_map", methods=["POST"])
 def reinforce_map():
@@ -580,8 +755,22 @@ def rocchio_feedback(
         
         return updated_query
 
-def determine_cluster(title, abstract):
-    """Determine the research domain/cluster for a paper based on its title and abstract"""
+def determine_cluster(title, abstract, tag=""):
+    """Determine the research domain/cluster for a paper based on its title, abstract, and tag"""
+    # First check if the tag directly maps to a cluster
+    tag_mapping = {
+        "transformer": "NLP",
+        "nlp": "NLP",
+        "cv": "Computer Vision",
+        "rl": "Reinforcement Learning",
+        "dl": "Machine Learning",
+        "gan": "Generative Models",
+        "ai": "Machine Learning"
+    }
+    
+    if tag and tag.lower() in tag_mapping:
+        return tag_mapping[tag.lower()]
+    
     combined_text = (title + " " + abstract).lower()
     
     # Specific model names detection
@@ -591,6 +780,8 @@ def determine_cluster(title, abstract):
         return "NLP"
     elif "xlnet" in combined_text or "bert" in combined_text or "gpt" in combined_text:
         return "NLP"
+    elif "policy gradient" in combined_text:
+        return "Reinforcement Learning"
     
     # General domain detection
     if "machine learning" in combined_text or "neural network" in combined_text:
@@ -604,9 +795,11 @@ def determine_cluster(title, abstract):
     elif "generative" in combined_text or "gan" in combined_text or "diffusion" in combined_text:
         return "Generative Models"
     else:
-        # Fallback to one of the domains randomly
+        # Fallback to one of the domains based on a hash of the title
+        # but make it deterministic so the same paper always gets the same cluster
         domains = ["Machine Learning", "Computer Vision", "NLP", "Reinforcement Learning", "Generative Models"]
-        return domains[hash(title) % len(domains)]
+        hash_value = hash(title) % len(domains)
+        return domains[hash_value]
 
 def determine_reading_level(abstract):
     """Determine the reading complexity of a paper"""
@@ -624,16 +817,24 @@ def determine_reading_level(abstract):
         return "Introductory"
 
 def create_guided_journeys(papers):
-    """Create guided journeys through papers"""
-    # Group papers by cluster
+    """Create diverse guided journeys through papers based on multiple criteria"""
+    # Group papers by cluster and tag
     clusters = {}
     for paper in papers:
         cluster = paper["cluster"]
+        tag = paper.get("tag", "general")
+        
         if cluster not in clusters:
-            clusters[cluster] = []
-        clusters[cluster].append(paper)
+            clusters[cluster] = {}
+        
+        if tag not in clusters[cluster]:
+            clusters[cluster][tag] = []
+        
+        clusters[cluster][tag].append(paper)
     
+    # Initialize journey data
     journeys = []
+    processed_combinations = set()  # Track cluster+tag combinations to avoid duplicates
     
     # Journey templates by research domain
     journey_descriptions = {
@@ -664,29 +865,135 @@ def create_guided_journeys(papers):
         }
     }
     
-    for i, (cluster, cluster_papers) in enumerate(clusters.items()):
-        # Skip if not enough papers
-        if len(cluster_papers) < 3:
-            continue
-        
-        journey_info = journey_descriptions.get(cluster, {
-            "title": f"Journey through {cluster}",
-            "description": f"Explore important papers in {cluster}.",
-            "class": "default"
-        })
-        
-        # Sort papers by citations (or randomly if no citations) and take a subset
-        sorted_papers = sorted(cluster_papers, key=lambda p: p.get("citations", 0), reverse=True)
-        journey_papers = sorted_papers[:min(5, len(sorted_papers))]  # Take top 5 papers or fewer
-        
-        journeys.append({
-            "id": f"journey-{i+1}",
-            "title": journey_info["title"],
-            "description": journey_info["description"],
-            "domain": cluster,
-            "steps": [p["id"] for p in journey_papers],
-            "class": journey_info["class"]
-        })
+    journey_id = 1
+    
+    # Create different types of journeys
+    for cluster, tags in clusters.items():
+        for tag, tag_papers in tags.items():
+            # Skip if not enough papers
+            if len(tag_papers) < 3:
+                continue
+                
+            # Create a key to track this combination
+            combo_key = f"{cluster}:{tag}"
+            if combo_key in processed_combinations:
+                continue
+                
+            processed_combinations.add(combo_key)
+            
+            journey_info = journey_descriptions.get(cluster, {
+                "title": f"Journey through {cluster}",
+                "description": f"Explore important papers in {cluster}.",
+                "class": cluster.lower()[:2]
+            })
+            
+            # Create different journey types based on available data
+            
+            # 1. High Impact Papers Journey (sort by citations)
+            if len(tag_papers) >= 3:
+                citation_sorted = sorted(tag_papers, key=lambda p: p.get("citations", 0), reverse=True)
+                high_impact_papers = citation_sorted[:min(5, len(citation_sorted))]
+                
+                title = f"{journey_info['title']}: {tag.upper()}"
+                description = f"The most influential and highly-cited papers in {cluster}"
+                
+                journeys.append({
+                    "id": f"journey-{journey_id}",
+                    "title": title,
+                    "description": description,
+                    "domain": cluster,
+                    "tag": tag,
+                    "steps": [p["id"] for p in high_impact_papers],
+                    "class": journey_info["class"]
+                })
+                
+                journey_id += 1
+            
+            # 2. Chronological Evolution Journey (sort by year)
+            if len(tag_papers) >= 4:
+                # Only include papers with years
+                year_papers = [p for p in tag_papers if p.get("year")]
+                if len(year_papers) >= 4:
+                    year_sorted = sorted(year_papers, key=lambda p: p.get("year", "2000"))
+                    evolution_papers = year_sorted[:min(5, len(year_sorted))]
+                    
+                    title = f"Evolution of {cluster}: {tag.upper()}"
+                    description = f"Track how {cluster} research in this has evolved over time."
+                    
+                    journeys.append({
+                        "id": f"journey-{journey_id}",
+                        "title": title,
+                        "description": description,
+                        "domain": cluster,
+                        "tag": tag,
+                        "steps": [p["id"] for p in evolution_papers],
+                        "class": journey_info["class"]
+                    })
+                    
+                    journey_id += 1
+            
+            # 3. Hub-Authority Path Journey (if hubs and authorities present)
+            hub_papers = [p for p in tag_papers if p.get("isHub")]
+            authority_papers = [p for p in tag_papers if p.get("isAuthority")]
+            
+            if hub_papers and authority_papers and len(hub_papers) + len(authority_papers) >= 3:
+                # Create a journey mixing hubs and authorities
+                hub_auth_path = []
+                
+                # Start with a hub
+                hub_auth_path.extend(hub_papers[:min(2, len(hub_papers))])
+                
+                # Add authorities
+                hub_auth_path.extend(authority_papers[:min(3, len(authority_papers))])
+                
+                # Ensure we have enough papers in the path
+                if len(hub_auth_path) < 3:
+                    # Add more papers by citation count
+                    remaining_papers = [p for p in tag_papers if p not in hub_auth_path]
+                    citation_sorted = sorted(remaining_papers, key=lambda p: p.get("citations", 0), reverse=True)
+                    hub_auth_path.extend(citation_sorted[:min(5 - len(hub_auth_path), len(citation_sorted))])
+                
+                # Limit to 5 papers
+                hub_auth_path = hub_auth_path[:5]
+                
+                title = f"Citation Influence: {tag.upper()}"
+                description = f"Explore the network of influential and authoritative papers in {cluster}."
+                
+                journeys.append({
+                    "id": f"journey-{journey_id}",
+                    "title": title,
+                    "description": description,
+                    "domain": cluster,
+                    "tag": tag,
+                    "steps": [p["id"] for p in hub_auth_path],
+                    "class": journey_info["class"]
+                })
+                
+                journey_id += 1
+            
+            # 4. Recent Developments Journey (papers from last 3 years)
+            current_year = 2023  # We could get this dynamically
+            recent_papers = [p for p in tag_papers if p.get("year") and int(p.get("year", "2000")) >= current_year - 3]
+            
+            if len(recent_papers) >= 3:
+                # Sort by citation count for recent papers
+                recent_sorted = sorted(recent_papers, key=lambda p: p.get("citations", 0), reverse=True)
+                recent_journey = recent_sorted[:min(5, len(recent_sorted))]
+                
+                title = f"Recent Advances in {cluster}: {tag.upper()}"
+                description = f"Discover the most recent and impactful papers in {cluster}."
+                
+                journeys.append({
+                    "id": f"journey-{journey_id}",
+                    "title": title,
+                    "description": description,
+                    "domain": cluster,
+                    "tag": tag,
+                    "steps": [p["id"] for p in recent_journey],
+                    "class": journey_info["class"]
+                })
+                
+                journey_id += 1
     
     return journeys
 
@@ -782,6 +1089,235 @@ else:
     with open(precompute_hash_path, 'w') as f:
         f.write(data_hash)
     print("Precomputation complete")
-
+    
+def process_citation_network(papers_data):
+    """
+    Process the citation network to identify hubs and authorities.
+    
+    Args:
+        papers_data: The original paper data
+    
+    Returns:
+        Dict with hub and authority information
+    """
+    # Map paper titles to indices for lookup
+    title_to_index = {paper.get("title"): i for i, paper in enumerate(papers_data)}
+    
+    # Identify potential hub papers (high citation counts)
+    # Get the percentile threshold - lowered to include more potential hubs
+    citation_counts = [paper.get("citation_count", 0) for paper in papers_data]
+    citation_counts = [count for count in citation_counts if count > 0]
+    
+    if citation_counts:
+        # Use a lower percentile to include more potential hubs - 75th instead of 85th
+        hub_threshold = np.percentile(citation_counts, 75)
+        # If threshold is too high, use a minimum value to ensure we have some hubs
+        hub_threshold = min(hub_threshold, 200)  # Cap threshold at 200
+    else:
+        hub_threshold = 50  # Lower default if no citation data
+    
+    print(f"Hub threshold: {hub_threshold} citations")
+    
+    # Mark papers as hubs if they have citation counts above the threshold
+    hub_papers = []
+    for i, paper in enumerate(papers_data):
+        citation_count = paper.get("citation_count", 0)
+        if citation_count >= hub_threshold:
+            hub_papers.append({
+                "index": i,
+                "title": paper.get("title"),
+                "citation_count": citation_count
+            })
+    
+    # If we found too few hubs, include additional papers based on relative citation count
+    if len(hub_papers) < 5 and citation_counts:
+        # Take top 5 papers by citation count
+        additional_count = 5 - len(hub_papers)
+        # Sort papers by citation count
+        sorted_papers = sorted(enumerate(papers_data), 
+                              key=lambda x: x[1].get("citation_count", 0), 
+                              reverse=True)
+        
+        # Add papers not already in hub_papers
+        existing_hub_indices = {hub["index"] for hub in hub_papers}
+        for i, paper in sorted_papers:
+            if i not in existing_hub_indices and len(hub_papers) < 5:
+                hub_papers.append({
+                    "index": i,
+                    "title": paper.get("title"),
+                    "citation_count": paper.get("citation_count", 0)
+                })
+    
+    print(f"Identified {len(hub_papers)} hub papers")
+    
+    # Identify papers cited by hubs (potential authorities)
+    authority_candidates = {}
+    
+    # First check "cites" field for explicit citations
+    for hub in hub_papers:
+        hub_index = hub["index"]
+        hub_paper = papers_data[hub_index]
+        
+        # Check if this hub paper cites other papers
+        if "cites" in hub_paper:
+            for cited_paper in hub_paper.get("cites", []):
+                cited_title = cited_paper.get("title")
+                
+                # Check if the cited paper is in our dataset
+                if cited_title in title_to_index:
+                    cited_index = title_to_index[cited_title]
+                    
+                    # Add or update the authority candidate
+                    if cited_index not in authority_candidates:
+                        authority_candidates[cited_index] = {
+                            "index": cited_index,
+                            "title": cited_title,
+                            "citing_hubs": [],
+                            "citation_count": cited_paper.get("citation_count", 0)
+                        }
+                    
+                    # Add the hub to the list of citing hubs
+                    authority_candidates[cited_index]["citing_hubs"].append(hub_index)
+    
+    # If we don't have enough explicit citations, infer some based on similarity
+    if len(authority_candidates) < 3:
+        # For each hub, find the most similar papers and treat them as potential authorities
+        for hub in hub_papers:
+            hub_index = hub["index"]
+            
+            # Skip if out of bounds for similarities
+            if hub_index >= len(paper_similarities):
+                continue
+                
+            # Get the most similar papers to this hub
+            similar_papers = paper_similarities[hub_index][:5]  # Top 5 similar papers
+            
+            for similar in similar_papers:
+                similar_id = similar.get("original_id")
+                
+                # Skip if this is another hub or out of bounds
+                if similar_id is None or similar_id >= len(papers_data) or similar_id in [h["index"] for h in hub_papers]:
+                    continue
+                
+                # Add as potential authority
+                if similar_id not in authority_candidates:
+                    authority_candidates[similar_id] = {
+                        "index": similar_id,
+                        "title": papers_data[similar_id].get("title", "Unknown"),
+                        "citing_hubs": [],
+                        "citation_count": papers_data[similar_id].get("citation_count", 0),
+                        "inferred": True  # Mark as inferred rather than explicit
+                    }
+                
+                # Add the hub to the list of citing hubs
+                if hub_index not in authority_candidates[similar_id]["citing_hubs"]:
+                    authority_candidates[similar_id]["citing_hubs"].append(hub_index)
+    
+    # Filter for papers cited by at least 1 hub (true authorities) - lowered from 2 to 1
+    # This will increase the chances of finding hub-authority relationships
+    authorities = [auth for auth in authority_candidates.values() 
+                  if len(auth["citing_hubs"]) >= 1]
+    
+    # If we still have too few authorities, add some based on other criteria
+    if len(authorities) < 3:
+        # Find papers with moderate citation counts that aren't hubs
+        hub_indices = {hub["index"] for hub in hub_papers}
+        for i, paper in enumerate(papers_data):
+            if i not in hub_indices and i not in authority_candidates:
+                citation_count = paper.get("citation_count", 0)
+                # Papers with moderate citation counts make good authorities
+                if citation_count > 0 and citation_count < hub_threshold:
+                    # Create synthetic authority with connection to 1st hub
+                    authorities.append({
+                        "index": i,
+                        "title": paper.get("title", "Unknown"),
+                        "citing_hubs": [hub_papers[0]["index"]] if hub_papers else [],
+                        "citation_count": citation_count,
+                        "synthetic": True  # Mark as synthetic
+                    })
+                    # Only add a few
+                    if len(authorities) >= 5:
+                        break
+    
+    print(f"Identified {len(authorities)} authority papers")
+    
+    # Create edge list for hub-authority connections
+    hub_authority_edges = []
+    for authority in authorities:
+        for hub_index in authority["citing_hubs"]:
+            hub_authority_edges.append({
+                "source": hub_index,
+                "target": authority["index"],
+                "type": "citation"
+            })
+    
+    return {
+        "hubs": hub_papers,
+        "authorities": authorities,
+        "edges": hub_authority_edges
+    }
+    
+@app.route("/search_papers")
+def search_papers():
+    """API endpoint for searching papers in the galaxy visualization"""
+    query = request.args.get("query", "").strip().lower()
+    if not query:
+        return jsonify([])
+    
+    try:
+        # Extract papers currently in the galaxy
+        galaxy_papers = request.args.get("current_papers", "").split(",")
+        galaxy_papers = [paper_id for paper_id in galaxy_papers if paper_id]
+        
+        # If no current papers specified, search the whole dataset
+        if not galaxy_papers:
+            results = []
+            for i, paper in enumerate(data):
+                title = paper.get("title", "").lower()
+                abstract = paper.get("abstract", "").lower()
+                tag = paper.get("tag", "").lower()
+                
+                # Check if paper matches query
+                if query in title or query in abstract or query in tag:
+                    paper_copy = paper.copy()
+                    paper_copy["id"] = f"paper-{i}"
+                    paper_copy["score"] = 1.0 if query in title else 0.5
+                    results.append(paper_copy)
+            
+            # Sort by score and limit results
+            results.sort(key=lambda p: p.get("score", 0), reverse=True)
+            results = results[:10]  # Limit to top 10
+        else:
+            # Search only papers currently in the galaxy
+            results = []
+            for paper_id in galaxy_papers:
+                # Extract the index from paper-X format
+                try:
+                    if paper_id.startswith("paper-"):
+                        index = int(paper_id.split("-")[1])
+                        if 0 <= index < len(data):
+                            paper = data[index]
+                            title = paper.get("title", "").lower()
+                            abstract = paper.get("abstract", "").lower()
+                            tag = paper.get("tag", "").lower()
+                            
+                            # Check if paper matches query
+                            if query in title or query in abstract or query in tag:
+                                paper_copy = paper.copy()
+                                paper_copy["id"] = paper_id
+                                paper_copy["score"] = 1.0 if query in title else 0.5
+                                results.append(paper_copy)
+                except:
+                    continue
+            
+            # Sort by score and limit results
+            results.sort(key=lambda p: p.get("score", 0), reverse=True)
+        
+        # Convert for JSON serialization
+        return jsonify(convert_to_serializable(results))
+    except Exception as e:
+        print(f"Error in paper search: {str(e)}")
+        return jsonify({"error": str(e)})
+    
 if 'DB_NAME' not in os.environ:
     app.run(debug=True, host="0.0.0.0", port=5000)

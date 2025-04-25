@@ -5,10 +5,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const GALAXY_CONFIG = {
         width: 0,  // Will be set based on container size
         height: 0, // Will be set based on container size
-        nodeRadius: 5,
-        centerNodeRadius: 12,
-        linkDistance: 120,
-        charge: -400,
+        nodeRadius: 4,  // Slightly smaller default radius to accommodate more nodes
+        hubNodeRadius: 10,
+        authorityNodeRadius: 7,
+        centerNodeRadius: 10,
+        linkDistance: 1000,  // Reduced for more compact layout
+        charge: -300,  // Adjusted force to prevent overcrowding
         centerForce: 0.03,
         clusters: {
             'Machine Learning': { color: '#FF5555', x: 0.3, y: 0.3 },
@@ -17,11 +19,17 @@ document.addEventListener('DOMContentLoaded', function() {
             'Reinforcement Learning': { color: '#55FF55', x: 0.7, y: 0.7 },
             'Generative Models': { color: '#AA55FF', x: 0.5, y: 0.5 }
         },
-        maxPapers: 500, // Maximum papers to show
+        maxPapers: 250,
         journeyHighlightColor: '#FFFFFF',
         backgroundColor: '#121212',
         starColors: ['#FFFFFF', '#AAAAAA', '#888888', '#666666', '#444444'],
-        starCount: 500
+        starCount: 0,
+        hubAuthorityLinkColor: '#FFFFFF',
+        hubAuthorityLinkOpacity: 0.7,
+        regularLinkColor: '#444444',
+        regularLinkOpacity: 0.5,
+        authorityGlowColor: '#FFFF00',
+        hubColor: '#FFFFFF'
     };
 
     // State Management
@@ -47,8 +55,11 @@ document.addEventListener('DOMContentLoaded', function() {
         links: [],
         starNodes: [],
         initialDataLoaded: false,
+        
         activeJourneyHighlight: null, // Track if a journey is actively highlighted
     };
+
+    let hubAuthorityLinks = [];
 
     // DOM Elements
     const elements = {
@@ -85,16 +96,130 @@ document.addEventListener('DOMContentLoaded', function() {
         nodeSize: document.getElementById('node-size'),
         startExploring: document.getElementById('start-exploring'),
         tooltipContent: document.getElementById('tooltip-content'),
+        paperSearch: document.getElementById('paper-search'),
+        searchButton: document.getElementById('search-button'),
+        searchResultsList: document.getElementById('search-results-list'),
     };
 
     // ----- DATA LOADING AND INITIALIZATION -----
+
+    // Initialize search functionality
+    function initializeSearch() {
+        // Add event listeners for search
+        elements.searchButton.addEventListener('click', performSearch);
+        elements.paperSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    }
+
+    // Clear search highlights
+    function clearSearchHighlights() {
+        d3.selectAll('.paper-node').classed('search-highlight', false);
+    }
+
+    // Perform search based on input text
+    function performSearch() {
+        const query = elements.paperSearch.value.trim().toLowerCase();
+        if (!query) return;
+        
+        // Clear previous highlights
+        clearSearchHighlights();
+        
+        // Clear previous results
+        elements.searchResultsList.innerHTML = '';
+        
+        // Find papers matching the query
+        const results = state.papers.filter(paper => {
+            const title = paper.title.toLowerCase();
+            const abstract = paper.abstract.toLowerCase();
+            const tag = paper.tag.toLowerCase();
+            
+            return title.includes(query) || 
+                abstract.includes(query) || 
+                tag.includes(query);
+        });
+        
+        // Highlight matching nodes in the visualization
+        results.forEach(paper => {
+            const nodeId = paper.id;
+            const node = d3.select(`#node-${nodeId}`);
+            if (!node.empty()) {
+                node.classed('search-highlight', true);
+            }
+        });
+        
+        // If there are matching papers, center the view on the first one
+        if (results.length > 0) {
+            // Find the corresponding node
+            const firstPaperId = results[0].id;
+            const firstNode = state.nodes.find(n => n.id === firstPaperId);
+            if (firstNode) {
+                centerOnNode(firstNode);
+            }
+        }
+        
+        // Display search results
+        if (results.length === 0) {
+            elements.searchResultsList.innerHTML = `
+                <div class="search-no-results">
+                    No papers found matching "${query}"
+                </div>
+            `;
+        } else {
+            // Sort results by relevance (title match is most relevant)
+            results.sort((a, b) => {
+                const aTitle = a.title.toLowerCase();
+                const bTitle = b.title.toLowerCase();
+                
+                // Title matches take precedence
+                if (aTitle.includes(query) && !bTitle.includes(query)) return -1;
+                if (!aTitle.includes(query) && bTitle.includes(query)) return 1;
+                
+                // Then sort by citation count
+                return b.citations - a.citations;
+            });
+            
+            // Create result items (limit to top 10)
+            results.slice(0, 10).forEach(paper => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.innerHTML = `
+                    <div class="search-result-title">${paper.title}</div>
+                    <div class="search-result-info">
+                        <span class="search-result-year">${paper.year || 'N/A'}</span> | 
+                        <span class="search-result-citations">Citations: ${paper.citations || 0}</span>
+                    </div>
+                `;
+                
+                // Add click handler to center on this paper
+                resultItem.addEventListener('click', () => {
+                    // Find the node for this paper
+                    const node = state.nodes.find(n => n.id === paper.id);
+                    if (node) {
+                        centerOnNode(node);
+                        handleNodeClick(null, node); // Show paper details
+                    }
+                });
+                
+                elements.searchResultsList.appendChild(resultItem);
+            });
+            
+            // Add result count
+            const countElement = document.createElement('div');
+            countElement.className = 'search-result-count';
+            countElement.textContent = `Found ${results.length} matching papers`;
+            elements.searchResultsList.prepend(countElement);
+        }
+    }
 
     // Fetch initial data to bootstrap the visualization
 
     async function fetchInitialData() {
         try {
-            // In a real implementation, this would be a call to an API endpoint
-            const response = await fetch('/explore_data');
+            // Pass the maxPapers configuration to the backend
+            const response = await fetch(`/explore_data?maxPapers=${GALAXY_CONFIG.maxPapers}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -107,8 +232,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             state.papers = data.papers || [];
             state.journeys = data.journeys || [];
+            hubAuthorityLinks = data.hubAuthorityLinks || [];  // Store hub-authority links
             
             console.log(`Loaded ${state.papers.length} papers and ${state.journeys.length} journeys`);
+            console.log(`Found ${hubAuthorityLinks.length} hub-authority citation links`);
+            
             state.initialDataLoaded = true;
             
             // Calculate initial positions for papers based on their clusters
@@ -123,6 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
             populateDomainFilters();
             populateJourneyList();
             hideLoading();
+            addEventListeners();
+            initializeSearch();
         } catch (error) {
             console.error('Error fetching initial data:', error);
             // Show error message
@@ -170,9 +300,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Initialize D3 force simulation
         initializeForceSimulation();
-
-        // Add event listeners for controls
-        addEventListeners();
 
         // Define the extended area parameters using the same extendedFactor as generateStars
         const extendedFactor = 6; // Must match generateStars extendedFactor
@@ -304,15 +431,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the force simulation with nodes and links
     function initializeForceSimulation() {
         // Create nodes from paper data
-        state.nodes = state.papers.map(paper => ({
-            id: paper.id,
-            radius: GALAXY_CONFIG.nodeRadius,
-            cluster: paper.cluster,
-            color: GALAXY_CONFIG.clusters[paper.cluster].color,
-            x: paper.x || (GALAXY_CONFIG.width / 2 + (Math.random() - 0.5) * 200),
-            y: paper.y || (GALAXY_CONFIG.height / 2 + (Math.random() - 0.5) * 200),
-            paper: paper
-        }));
+        state.nodes = state.papers.map(paper => {
+            // Set node radius based on paper type and citation count
+            let radius = GALAXY_CONFIG.nodeRadius;
+            if (paper.isHub) {
+                radius = GALAXY_CONFIG.hubNodeRadius;
+            } else if (paper.isAuthority) {
+                radius = GALAXY_CONFIG.authorityNodeRadius;
+            } else if (paper.citations) {
+                // Scale radius by citation count (log scale to handle wide range)
+                const citationFactor = Math.log(paper.citations + 1) / Math.log(1000);
+                radius = GALAXY_CONFIG.nodeRadius + citationFactor * (GALAXY_CONFIG.hubNodeRadius - GALAXY_CONFIG.nodeRadius);
+            }
+            
+            return {
+                id: paper.id,
+                radius: radius,
+                cluster: paper.cluster,
+                color: GALAXY_CONFIG.clusters[paper.cluster].color,
+                x: paper.x || (GALAXY_CONFIG.width / 2 + (Math.random() - 0.5) * 200),
+                y: paper.y || (GALAXY_CONFIG.height / 2 + (Math.random() - 0.5) * 200),
+                paper: paper,
+                isHub: paper.isHub,
+                isAuthority: paper.isAuthority
+            };
+        });
         
         // Create links based on related papers
         state.links = [];
@@ -321,15 +464,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 state.links.push({
                     source: paper.id,
                     target: relatedId,
-                    value: 1
+                    value: 1,
+                    type: 'similarity'
                 });
             });
         });
         
-        // Create force simulation
+        // Add hub-authority citation links if available
+        if (hubAuthorityLinks && hubAuthorityLinks.length > 0) {
+            hubAuthorityLinks.forEach(link => {
+                state.links.push({
+                    source: link.source,
+                    target: link.target,
+                    value: 2,  // Stronger link value for citations
+                    type: 'citation'
+                });
+            });
+        }
+        
+        // Create force simulation with appropriate forces
         state.simulation = d3.forceSimulation(state.nodes)
-            .force('charge', d3.forceManyBody().strength(GALAXY_CONFIG.charge))
-            .force('link', d3.forceLink(state.links).id(d => d.id).distance(GALAXY_CONFIG.linkDistance))
+            .force('charge', d3.forceManyBody().strength(d => 
+                d.isHub ? GALAXY_CONFIG.charge * 1.5 : 
+                d.isAuthority ? GALAXY_CONFIG.charge * 1.2 : 
+                GALAXY_CONFIG.charge))
+            .force('link', d3.forceLink(state.links)
+                .id(d => d.id)
+                .distance(d => d.type === 'citation' ? 
+                          GALAXY_CONFIG.linkDistance * 0.7 : 
+                          GALAXY_CONFIG.linkDistance)
+                .strength(d => d.type === 'citation' ? 0.7 : 0.3))
             .force('x', d3.forceX().strength(GALAXY_CONFIG.centerForce).x(d => {
                 const clusterData = GALAXY_CONFIG.clusters[d.cluster];
                 return clusterData.x * GALAXY_CONFIG.width;
@@ -410,16 +574,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Create link elements between paper nodes
+
     function createLinks() {
-        state.container.append('g')
-            .attr('class', 'links')
-            .selectAll('line')
-            .data(state.links)
+        // Create groups for different link types
+        const linkGroups = state.container.append('g')
+            .attr('class', 'links');
+            
+        // Create regular similarity links
+        linkGroups.selectAll('.similarity-link')
+            .data(state.links.filter(d => d.type === 'similarity'))
             .enter()
             .append('line')
-            .attr('stroke', '#444')
-            .attr('stroke-opacity', 0.5)
+            .attr('class', 'similarity-link')
+            .attr('stroke', GALAXY_CONFIG.regularLinkColor)
+            .attr('stroke-opacity', GALAXY_CONFIG.regularLinkOpacity)
             .attr('stroke-width', 1);
+        
+        // Create citation links (hub-authority connections)
+        linkGroups.selectAll('.citation-link')
+            .data(state.links.filter(d => d.type === 'citation'))
+            .enter()
+            .append('line')
+            .attr('class', 'citation-link')
+            .attr('stroke', GALAXY_CONFIG.hubAuthorityLinkColor)
+            .attr('stroke-opacity', GALAXY_CONFIG.hubAuthorityLinkOpacity)
+            .attr('stroke-width', 2)
+            .attr('stroke-dasharray', '5,3');
     }
 
     // Create node elements for papers
@@ -431,25 +611,55 @@ document.addEventListener('DOMContentLoaded', function() {
             .data(state.nodes)
             .enter()
             .append('g')
-            .attr('class', 'paper-node')
+            .attr('class', d => {
+                let classes = 'paper-node';
+                if (d.isHub) classes += ' hub-node';
+                if (d.isAuthority) classes += ' authority-node';
+                return classes;
+            })
             .attr('id', d => `node-${d.id}`)
             .on('mouseover', handleNodeMouseOver)
             .on('mouseout', handleNodeMouseOut)
             .on('click', handleNodeClick);
         
-        // Add circles for each node
+        // Add circles for each node with appropriate styling
         nodeGroups.append('circle')
             .attr('r', d => d.radius)
             .attr('fill', d => d.color)
-            .attr('stroke', '#222')
-            .attr('stroke-width', 1);
+            .attr('stroke', d => {
+                if (d.isHub) return GALAXY_CONFIG.hubColor;
+                if (d.isAuthority) return GALAXY_CONFIG.authorityGlowColor;
+                return '#222';
+            })
+            .attr('stroke-width', d => {
+                if (d.isHub || d.isAuthority) return 2;
+                return 1;
+            });
         
-        // Add subtle glow effect
+        // Add special glow effect for authority nodes
+        nodeGroups.filter(d => d.isAuthority)
+            .append('circle')
+            .attr('r', d => d.radius * 2.5)
+            .attr('fill', d => d.color)
+            .attr('opacity', 0.2)
+            .attr('class', 'authority-glow');
+        
+        // Add subtle glow effect for all nodes
         nodeGroups.append('circle')
             .attr('r', d => d.radius * 1.5)
             .attr('fill', d => d.color)
-            .attr('opacity', 0.2)
+            .attr('opacity', d => d.isAuthority ? 0.4 : 0.2)
             .attr('class', 'node-glow');
+        
+        // Add a special pulsing glow effect just for authority nodes
+        nodeGroups.filter(d => d.isAuthority)
+            .append('circle')
+            .attr('r', d => d.radius * 2)
+            .attr('fill', 'none')
+            .attr('stroke', GALAXY_CONFIG.authorityGlowColor)
+            .attr('stroke-width', 2)
+            .attr('opacity', 0.5)
+            .attr('class', 'authority-pulse');
         
         // Create tooltips for hover info
         const tooltip = d3.select('body')
@@ -483,14 +693,25 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr('r', d.radius * 2)
             .attr('opacity', 0.3);
         
-        // Show tooltip
+        // Show tooltip with enhanced information
         const tooltip = d3.select('.node-tooltip');
         if (!tooltip.empty()) {
+            let tooltipContent = `
+                <div class="tooltip-title">${d.paper.title}</div>
+                <div class="tooltip-year">${d.paper.year}</div>
+                <div class="tooltip-citations">Citations: ${d.paper.citations || 0}</div>
+            `;
+            
+            // Add hub/authority status if applicable
+            if (d.isHub) {
+                tooltipContent += `<div class="tooltip-status hub-status">Hub Paper</div>`;
+            }
+            if (d.isAuthority) {
+                tooltipContent += `<div class="tooltip-status authority-status">Authority Paper</div>`;
+            }
+            
             tooltip
-                .html(`
-                    <div class="tooltip-title">${d.paper.title}</div>
-                    <div class="tooltip-year">${d.paper.year}</div>
-                `)
+                .html(tooltipContent)
                 .style('left', (event.pageX) + 'px')
                 .style('top', (event.pageY - 10) + 'px')
                 .transition()
@@ -498,22 +719,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 .style('opacity', 1);
         }
         
-        // Highlight connected nodes
+        // Highlight connected nodes - highlight both similarity and citation connections
         d3.selectAll('.paper-node')
             .style('opacity', 0.4);
         
         d3.select(this)
             .style('opacity', 1);
         
-        // Find connected nodes and highlight them
+        // Find all connected nodes via any type of link
         const connectedLinks = state.links.filter(link => 
             link.source.id === d.id || link.target.id === d.id
         );
         
+        // Highlight citation links more prominently
+        d3.selectAll('.citation-link')
+            .style('stroke-opacity', 0.2);
+            
+        d3.selectAll('.similarity-link')
+            .style('stroke-opacity', 0.1);
+        
+        // Highlight connected nodes and their links
         connectedLinks.forEach(link => {
             const connectedId = link.source.id === d.id ? link.target.id : link.source.id;
+            
+            // Highlight connected node
             d3.select(`#node-${connectedId}`)
                 .style('opacity', 1);
+                
+            // Highlight the specific link
+            if (link.type === 'citation') {
+                // Find and highlight the citation link
+                state.container.selectAll('.citation-link')
+                    .filter(l => 
+                        (l.source.id === d.id && l.target.id === connectedId) || 
+                        (l.source.id === connectedId && l.target.id === d.id)
+                    )
+                    .style('stroke-opacity', 1)
+                    .style('stroke-width', 3);
+            } else {
+                // Find and highlight the similarity link
+                state.container.selectAll('.similarity-link')
+                    .filter(l => 
+                        (l.source.id === d.id && l.target.id === connectedId) || 
+                        (l.source.id === connectedId && l.target.id === d.id)
+                    )
+                    .style('stroke-opacity', 0.7)
+                    .style('stroke-width', 2);
+            }
         });
     }
 
@@ -543,6 +795,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset all nodes opacity
         d3.selectAll('.paper-node')
             .style('opacity', 1);
+            
+        // Reset link styles
+        d3.selectAll('.citation-link')
+            .style('stroke-opacity', GALAXY_CONFIG.hubAuthorityLinkOpacity)
+            .style('stroke-width', 2);
+            
+        d3.selectAll('.similarity-link')
+            .style('stroke-opacity', GALAXY_CONFIG.regularLinkOpacity)
+            .style('stroke-width', 1);
     }
 
     // Handle click on paper nodes
@@ -940,8 +1201,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // D3 force simulation tick handler
     function ticked() {
-        // Update link positions
-        state.container.selectAll('.links line')
+        // Update similarity link positions
+        state.container.selectAll('.similarity-link')
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+        
+        // Update citation link positions
+        state.container.selectAll('.citation-link')
             .attr('x1', d => d.source.x)
             .attr('y1', d => d.source.y)
             .attr('x2', d => d.target.x)
@@ -993,14 +1261,20 @@ document.addEventListener('DOMContentLoaded', function() {
         state.simulation.alpha(0.3).restart();
     }
 
-    // Update node sizes
+    // Update node sizes based on current setting while maintaining hub/authority differentiation
     function updateNodeSizes(sizeValue) {
         const size = parseInt(sizeValue);
         state.nodeSize = size;
         
-        // Update node radii
+        // Update node radii while maintaining the hierarchy
         state.nodes.forEach(node => {
-            node.radius = size;
+            if (node.isHub) {
+                node.radius = size * 1.5;  // Hubs remain larger
+            } else if (node.isAuthority) {
+                node.radius = size * 1.2;  // Authorities remain medium-sized
+            } else {
+                node.radius = size;
+            }
         });
         
         // Update visual elements
@@ -1013,6 +1287,17 @@ document.addEventListener('DOMContentLoaded', function() {
             .transition()
             .duration(300)
             .attr('r', d => d.radius * 1.5);
+            
+        // Update authority glow
+        d3.selectAll('.paper-node .authority-glow')
+            .transition()
+            .duration(300)
+            .attr('r', d => d.radius * 2.5);
+            
+        d3.selectAll('.paper-node .authority-pulse')
+            .transition()
+            .duration(300)
+            .attr('r', d => d.radius * 2);
         
         // Update collision force
         state.simulation
@@ -1032,6 +1317,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listeners for all UI controls
     function addEventListeners() {
+        // Clear any existing clear search button first to prevent duplicates
+        const existingClearButtons = document.querySelectorAll('.clear-search-btn');
+        existingClearButtons.forEach(btn => btn.remove());
+        
         // Close paper detail panel
         elements.closePanel.addEventListener('click', () => {
             elements.paperDetail.classList.remove('active');
@@ -1044,7 +1333,7 @@ document.addEventListener('DOMContentLoaded', function() {
             state.activeJourney = null;
             state.container.selectAll('.journey-path').remove();
         });
-
+    
         elements.paperLink.addEventListener('click', (event) => {
             event.preventDefault();
             const link = event.currentTarget.getAttribute("data-paper-link");
@@ -1086,6 +1375,50 @@ document.addEventListener('DOMContentLoaded', function() {
             updateNodeSizes(e.target.value);
         });
         
+        // Search functionality
+        if (elements.searchButton) {
+            elements.searchButton.addEventListener('click', performSearch);
+        }
+        
+        if (elements.paperSearch) {
+            elements.paperSearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        }
+        
+        // Add a clear search results button
+        const clearSearchBtn = document.createElement('button');
+        clearSearchBtn.className = 'clear-search-btn';
+        clearSearchBtn.innerHTML = '<i class="fas fa-times"></i> Clear Results';
+        clearSearchBtn.addEventListener('click', () => {
+            elements.paperSearch.value = '';
+            elements.searchResultsList.innerHTML = '';
+            clearSearchHighlights();
+        });
+        
+        // Append the clear button after the search results list
+        if (elements.searchResultsList && elements.searchResultsList.parentNode) {
+            elements.searchResultsList.parentNode.appendChild(clearSearchBtn);
+        }
+        
+        // Double-click background to clear all highlights
+        state.svg.on('dblclick', (event) => {
+            // Don't trigger if clicking on a node
+            if (event.target.closest('.paper-node')) return;
+            
+            // Clear all highlights
+            clearSearchHighlights();
+            resetJourneyHighlight();
+            if (state.activeJourney) {
+                elements.journeyGuide.classList.remove('active');
+                state.activeJourney = null;
+            }
+            d3.selectAll('.paper-node').classed('highlighted', false);
+            elements.paperDetail.classList.remove('active');
+        });
+        
         // Resize handler
         window.addEventListener('resize', debounce(() => {
             // Update dimensions
@@ -1097,6 +1430,65 @@ document.addEventListener('DOMContentLoaded', function() {
             updateForceSimulation();
         }, 250));
     }
+
+    function updateVisualizationLegend() {
+        // Create or update the visualization legend
+        const legendContainer = d3.select('.visualization-legend');
+        if (legendContainer.empty()) {
+            // Create legend if it doesn't exist
+            const legend = d3.select('#galaxy-container')
+                .append('div')
+                .attr('class', 'visualization-legend');
+                
+            // Add title
+            legend.append('div')
+                .attr('class', 'legend-title')
+                .text('Legend');
+                
+            // Add cluster colors
+            Object.entries(GALAXY_CONFIG.clusters).forEach(([cluster, data]) => {
+                const item = legend.append('div')
+                    .attr('class', 'legend-item');
+                    
+                item.append('div')
+                    .attr('class', 'legend-color')
+                    .style('background-color', data.color);
+                    
+                item.append('div')
+                    .attr('class', 'legend-label')
+                    .text(cluster);
+            });
+            
+            // Add separator
+            legend.append('div')
+                .attr('class', 'legend-separator');
+                
+            // Add hub and authority explanation
+            const hubItem = legend.append('div')
+                .attr('class', 'legend-item');
+                
+            hubItem.append('div')
+                .attr('class', 'legend-icon hub-legend')
+                .html('<i class="fas fa-star"></i>');
+                
+            hubItem.append('div')
+                .attr('class', 'legend-label')
+                .text('Hub Paper (Highly Cited)');
+                
+            const authorityItem = legend.append('div')
+                .attr('class', 'legend-item');
+                
+            authorityItem.append('div')
+                .attr('class', 'legend-icon authority-legend')
+                .html('<i class="fas fa-certificate"></i>');
+                
+            authorityItem.append('div')
+                .attr('class', 'legend-label')
+                .text('Authority Paper (Cited by Hubs)');
+        }
+    }
+
+    
 
     // Debounce function for resize events
     function debounce(func, wait) {
@@ -1220,6 +1612,7 @@ document.addEventListener('DOMContentLoaded', function() {
             createPaperPopup(paper.link, paper.title);
         }
     }
+    
 
     // ----- INITIALIZATION -----
     
