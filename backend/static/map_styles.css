@@ -11,6 +11,7 @@
 
 /* Browser compatibility improvements */
 @supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+
     .orb-legend,
     .hint-message,
     .map-message,
@@ -22,6 +23,7 @@
 
 /* For browsers that don't support backdrop-filter */
 @supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+
     .orb-legend,
     .hint-message,
     .map-message,
@@ -118,13 +120,6 @@
     padding-right: 5px;
     scrollbar-width: thin;
     scrollbar-color: #ff3333 #333;
-}
-
-.rocchio {
-    font-family: 'Montserrat', sans-serif;
-    color: #bbb;
-    font-size: 12px;
-    margin-bottom: -20px;
 }
 
 .tooltip-abstract::-webkit-scrollbar {
@@ -307,12 +302,12 @@
     #map-container {
         height: calc(100vh - 200px);
     }
-    
+
     .paper-tooltip {
         width: 85%;
         max-width: 300px;
     }
-    
+
     .orb-legend {
         top: auto;
         bottom: 20px;
@@ -320,12 +315,12 @@
         max-width: 200px;
         font-size: 10px;
     }
-    
+
     .zoom-controls {
         top: 10px;
         right: 10px;
     }
-    
+
     .hint-message {
         max-width: 200px;
         font-size: 10px;
@@ -441,7 +436,8 @@
     backdrop-filter: blur(5px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     border-left: 3px solid #ff3333;
-    z-index: 9999; /* Very high z-index to ensure it stays on top */
+    z-index: 9999;
+    /* Very high z-index to ensure it stays on top */
     font-size: 12px;
     transition: opacity 0.3s;
 }
@@ -492,7 +488,8 @@
     overflow: hidden;
 }
 
-.gradient-dark, .gradient-light {
+.gradient-dark,
+.gradient-light {
     flex: 1;
     height: 100%;
 }
@@ -511,7 +508,9 @@
     width: 40px;
 }
 
-.size-small, .size-medium, .size-large {
+.size-small,
+.size-medium,
+.size-large {
     background-color: #ff3333;
     border-radius: 80%;
     margin-right: -3px;
@@ -646,6 +645,7 @@
         stroke-opacity: 0.4;
         stroke-width: 1px;
     }
+
     100% {
         stroke-opacity: 0.8;
         stroke-width: 2px;
@@ -680,6 +680,7 @@
 
 /* Print styles */
 @media print {
+
     .paper-popup-container,
     .zoom-controls,
     .orb-legend,
@@ -689,17 +690,20 @@
     .reinforcement-overlay {
         display: none !important;
     }
-    
-    body, html, #map-container, .map-container-rect {
+
+    body,
+    html,
+    #map-container,
+    .map-container-rect {
         background-color: white !important;
         height: auto !important;
     }
-    
+
     .paper-node {
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
     }
-    
+
     .paper-title {
         fill: #000 !important;
         text-shadow: none !important;
