@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ReSearch - Paper Orb Visualization</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="icon" href="../static/images/Re.ico" type="image/Re-icon">
   <link rel="stylesheet" href="{{ url_for('static', filename='map_styles.css') }}">
+  <link rel="icon" href="../static/images/Re.ico" type="image/Re-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="{{ url_for('static', filename='js/paperMap.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/mapUtils.js') }}"></script>
 </head>
 
 <body>
@@ -60,8 +61,13 @@
   <!-- Add particles.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
   <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+  
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Initialize the map
+      window.multiMap = new MultiClusterMap('map-container', 'paper-tooltip');
+
+      // Initialize keyword search input with debounce
       const kwInput = document.getElementById('keyword-search-bar');
       function debounce(fn, wait) {
         let timer;
@@ -70,319 +76,39 @@
           timer = setTimeout(() => fn.apply(this, args), wait);
         };
       }
-      kwInput.addEventListener('input', debounce(keywordHighlightMap, 200));
+      kwInput.addEventListener('input', debounce(function() {
+        if (window.multiMap) {
+          window.multiMap.keywordHighlightMap(kwInput.value);
+        }
+      }, 200));
+
+      // Basic search input handling
+      const searchInput = document.getElementById('map-search-input');
+      
+      const debouncedSearch = debounce(() => {
+        const query = searchInput.value.trim();
+        if (query && window.multiMap) window.multiMap.fetchData(query);
+      }, 500);
+
+      searchInput.addEventListener('input', debouncedSearch);
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const query = searchInput.value.trim();
+          if (query && window.multiMap) window.multiMap.fetchData(query);
+        }
+      });
+
+      // If you have an onclick to focus
+      window.sendFocus = function () {
+        searchInput.focus();
+      };
+
+      // Add legend after DOM content loaded
+      setTimeout(addPersistentOrbLegend, 500);
+
+      // Optionally auto-focus
+      searchInput.focus();
     });
-
-    function keywordHighlightMap() {
-  const raw = document.getElementById("keyword-search-bar").value.toLowerCase().trim();
-  const keywords = raw.split(/[\s,]+/).filter(k => k);
-  
-  // First, reset all nodes to their original state
-  d3.selectAll(".paper-node-group").each(function(d) {
-    const node = d3.select(this);
-    // Reset the fill color to original
-    node.select("circle").attr("fill", d.originalColor || getNodeColorFallback(d));
-    
-    // Remove any highlight rings
-    node.select(".highlight-ring").remove();
-    
-    // Reset stroke
-    node.select("circle")
-      .attr("stroke", "#333")
-      .attr("stroke-width", 1);
-  });
-  
-  if (keywords.length === 0) return;
-  
-  // Apply a subtle highlight to matching nodes
-  d3.selectAll(".paper-node-group").each(function(d) {
-    const node = d3.select(this);
-    const paper = d;
-    
-    const abstract = (paper.abstract || "").toLowerCase();
-    const title = (paper.title || "").toLowerCase();
-    const hasAll = keywords.every(k => abstract.includes(k) || title.includes(k));
-    
-    if (hasAll) {
-      // Keep the original fill color
-      // Just add a golden stroke around the node
-      node.select("circle")
-        .attr("stroke", "#ffd700") // Golden color
-        .attr("stroke-width", 3)
-        .attr("stroke-opacity", 0.8);
-        
-      // Add a slightly larger highlight ring
-      const currentRadius = parseFloat(node.select("circle").attr("r"));
-      node.append("circle")
-        .attr("class", "highlight-ring")
-        .attr("cx", 0)
-        .attr("cy", 0)
-        .attr("r", currentRadius + 3)
-        .attr("fill", "none")
-        .attr("stroke", "#ffd700")
-        .attr("stroke-width", 1.5)
-        .attr("stroke-opacity", 0.6);
-    }
-  });
-}
-    function getNodeColorFallback(d) {
-      if (d.isCenter) return "#ffffff";
-      return "#ff3333";
-    }
-
-    // Function to add legend to the map container
-// Function to add a persistent legend to the orb visualization
-function addPersistentOrbLegend() {
-  // Remove any existing legend first
-  const existingLegend = document.querySelector('.orb-legend');
-  if (existingLegend) {
-    existingLegend.remove();
-  }
-  
-  // Create the legend container
-  const legend = document.createElement('div');
-  legend.className = 'orb-legend';
-  
-  // Add legend content with styled elements
-  legend.innerHTML = `
-    <h3>Paper Orb Guide</h3>
-    <div class="legend-section">
-      <div class="legend-title">Color</div>
-      <div class="legend-item">
-        <div class="color-gradient">
-          <span class="gradient-dark"></span>
-          <span class="gradient-light"></span>
-        </div>
-        <div class="legend-desc">Less similar → More similar to center</div>
-      </div>
-    </div>
-    
-    <div class="legend-section">
-      <div class="legend-title">Size</div>
-      <div class="legend-item">
-        <div class="size-gradient">
-          <span class="size-small"></span>
-          <span class="size-medium"></span>
-          <span class="size-large"></span>
-        </div>
-        <div class="legend-desc">Fewer → More citations</div>
-      </div>
-    </div>
-    
-    <div class="legend-section">
-      <div class="legend-title">Interaction</div>
-      <div class="legend-item with-icon">
-        <div class="drag-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 8C14 9.1 13.1 10 12 10C10.9 10 10 9.1 10 8C10 6.9 10.9 6 12 6C13.1 6 14 6.9 14 8Z"></path>
-            <path d="M12 12L12 18"></path>
-            <path d="M12 12L16 14"></path>
-            <path d="M12 12L8 14"></path>
-          </svg>
-        </div>
-        <div class="legend-desc">Drag papers away from the cluster to create new clusters</div>
-      </div>
-    </div>
-  `;
-  
-  // Add CSS for the legend if it doesn't exist yet
-  if (!document.querySelector('#orb-legend-style')) {
-    const style = document.createElement('style');
-    style.id = 'orb-legend-style';
-    style.textContent = `
-      .orb-legend {
-        position: absolute;
-        top: 500px;
-        left: 20px;
-        background-color: rgba(34, 34, 34, 0.85);
-        border-radius: 8px;
-        padding: 15px;
-        color: #bbb;
-        font-family: 'Montserrat', sans-serif;
-        max-width: 250px;
-        backdrop-filter: blur(5px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        border-left: 3px solid #ff3333;
-        z-index: 9999; /* Very high z-index to ensure it stays on top */
-        font-size: 12px;
-        transition: opacity 0.3s;
-      }
-      
-      .orb-legend h3 {
-        margin: 0 0 12px 0;
-        font-family: 'Kanit', sans-serif;
-        color: #ffffff;
-        font-size: 14px;
-        border-bottom: 1px solid rgba(255, 51, 51, 0.3);
-        padding-bottom: 5px;
-      }
-      
-      .legend-section {
-        margin-bottom: 12px;
-      }
-      
-      .legend-section:last-child {
-        margin-bottom: 0;
-      }
-      
-      .legend-title {
-        font-weight: bold;
-        color: #ff6666;
-        margin-bottom: 5px;
-        font-size: 11px;
-      }
-      
-      .legend-item {
-        display: flex;
-        align-items: center;
-        margin-left: 5px;
-      }
-      
-      .legend-desc {
-        flex: 1;
-        font-size: 11px;
-        margin-left: 8px;
-        line-height: 1.3;
-      }
-      
-      .color-gradient {
-        display: flex;
-        align-items: center;
-        width: 40px;
-        height: 12px;
-        border-radius: 6px;
-        overflow: hidden;
-      }
-      
-      .gradient-dark, .gradient-light {
-        flex: 1;
-        height: 100%;
-      }
-      
-      .gradient-dark {
-        background-color: #882222;
-      }
-      
-      .gradient-light {
-        background-color: #ff6666;
-      }
-      
-      .size-gradient {
-        display: flex;
-        align-items: center;
-        width: 40px;
-      }
-      
-      .size-small, .size-medium, .size-large {
-        background-color: #ff3333;
-        border-radius: 80%;
-        margin-right: -3px;
-      }
-      
-      .size-small {
-        width: 6px;
-        height: 6px;
-      }
-      
-      .size-medium {
-        width: 10px;
-        height: 10px;
-      }
-      
-      .size-large {
-        width: 14px;
-        height: 14px;
-      }
-      
-      .with-icon {
-        align-items: flex-start;
-      }
-      
-      .drag-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 22px;
-        height: 22px;
-        background-color: rgba(255, 51, 51, 0.2);
-        border-radius: 4px;
-        margin-top: -2px;
-        color: #ff6666;
-      }
-      
-      /* Optional: add hover state for better contrast */
-      .orb-legend:hover {
-        background-color: rgba(34, 34, 34, 0.95);
-      }
-      
-      /* Add minimize button */
-      .orb-legend-toggle {
-        position: absolute;
-        right: 7px;
-        top: 7px;
-        cursor: pointer;
-        color: #888;
-        width: 18px;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        border-radius: 50%;
-        background: rgba(0, 0, 0, 0.2);
-      }
-      
-      .orb-legend-toggle:hover {
-        color: #fff;
-        background: rgba(255, 51, 51, 0.3);
-      }
-      
-      .orb-legend.minimized {
-        height: 14px;
-        overflow: hidden;
-        padding: 10px 15px;
-      }
-      
-      .orb-legend.minimized h3 {
-        margin: 0;
-        padding: 0;
-        border: none;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-  
-  // Add toggle button for minimizing/maximizing legend
-  const toggleBtn = document.createElement('div');
-  toggleBtn.className = 'orb-legend-toggle';
-  toggleBtn.innerHTML = '−';
-  toggleBtn.title = 'Minimize/Maximize';
-  
-  toggleBtn.addEventListener('click', () => {
-    if (legend.classList.contains('minimized')) {
-      legend.classList.remove('minimized');
-      toggleBtn.innerHTML = '−';
-    } else {
-      legend.classList.add('minimized');
-      toggleBtn.innerHTML = '+';
-    }
-  });
-  
-  legend.appendChild(toggleBtn);
-  
-  // Add legend to the full-body-container instead of map-container
-  // This will make it persist even if the map container is cleared
-  const fullBodyContainer = document.querySelector('.full-body-container');
-  if (fullBodyContainer) {
-    fullBodyContainer.appendChild(legend);
-  }
-}
-
-// Ensure the legend persists by setting up multiple ways to add it
-document.addEventListener('DOMContentLoaded', () => {
-  // Add the legend when the page loads
-  setTimeout(addPersistentOrbLegend, 500);
-});
   </script>
 </body>
 

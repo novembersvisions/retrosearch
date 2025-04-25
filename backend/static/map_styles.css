@@ -9,6 +9,27 @@
     /* Allow clusters to move beyond boundaries */
 }
 
+/* Browser compatibility improvements */
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+    .orb-legend,
+    .hint-message,
+    .map-message,
+    .loading-map {
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(5px);
+    }
+}
+
+/* For browsers that don't support backdrop-filter */
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+    .orb-legend,
+    .hint-message,
+    .map-message,
+    .loading-map {
+        background-color: rgba(25, 25, 25, 0.9);
+    }
+}
+
 .map-container-rect {
     width: 100%;
     height: 100%;
@@ -104,7 +125,6 @@
     color: #bbb;
     font-size: 12px;
     margin-bottom: -20px;
-
 }
 
 .tooltip-abstract::-webkit-scrollbar {
@@ -237,39 +257,6 @@
     border-color: #ff6666;
 }
 
-.legend {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    background-color: rgba(34, 34, 34, 0.8);
-    padding: 15px;
-    border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
-    color: #bbb;
-    font-size: 12px;
-    z-index: 10;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.legend-item:last-child {
-    margin-bottom: 0;
-}
-
-.legend-color {
-    width: 15px;
-    height: 15px;
-    margin-right: 8px;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
 .hint-message {
     position: absolute;
     bottom: 20px;
@@ -315,26 +302,34 @@
     animation: pulse 1.2s infinite alternate ease-in-out;
 }
 
-/* Where additional mini-maps go (displayed side-by-side or in a row) */
-.mini-map-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin: 20px auto;
-    /* some breathing room */
-    justify-content: flex-start;
-    /* or center */
-}
-
-/* Each mini-map container styling */
-.mini-map-wrapper {
-    width: 400px;
-    height: 400px;
-    background-color: rgba(20, 20, 20, 0.4);
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    position: relative;
-    overflow: hidden;
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    #map-container {
+        height: calc(100vh - 200px);
+    }
+    
+    .paper-tooltip {
+        width: 85%;
+        max-width: 300px;
+    }
+    
+    .orb-legend {
+        top: auto;
+        bottom: 20px;
+        left: 10px;
+        max-width: 200px;
+        font-size: 10px;
+    }
+    
+    .zoom-controls {
+        top: 10px;
+        right: 10px;
+    }
+    
+    .hint-message {
+        max-width: 200px;
+        font-size: 10px;
+    }
 }
 
 /* Paper Popup Styles */
@@ -430,4 +425,283 @@
 .paper-popup-external-link:hover {
     color: #ffffff;
     text-decoration: underline;
+}
+
+/* Orb Legend Styles */
+.orb-legend {
+    position: absolute;
+    top: 500px;
+    left: 20px;
+    background-color: rgba(34, 34, 34, 0.85);
+    border-radius: 8px;
+    padding: 15px;
+    color: #bbb;
+    font-family: 'Montserrat', sans-serif;
+    max-width: 250px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    border-left: 3px solid #ff3333;
+    z-index: 9999; /* Very high z-index to ensure it stays on top */
+    font-size: 12px;
+    transition: opacity 0.3s;
+}
+
+.orb-legend h3 {
+    margin: 0 0 12px 0;
+    font-family: 'Kanit', sans-serif;
+    color: #ffffff;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255, 51, 51, 0.3);
+    padding-bottom: 5px;
+}
+
+.legend-section {
+    margin-bottom: 12px;
+}
+
+.legend-section:last-child {
+    margin-bottom: 0;
+}
+
+.legend-title {
+    font-weight: bold;
+    color: #ff6666;
+    margin-bottom: 5px;
+    font-size: 11px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-left: 5px;
+}
+
+.legend-desc {
+    flex: 1;
+    font-size: 11px;
+    margin-left: 8px;
+    line-height: 1.3;
+}
+
+.color-gradient {
+    display: flex;
+    align-items: center;
+    width: 40px;
+    height: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.gradient-dark, .gradient-light {
+    flex: 1;
+    height: 100%;
+}
+
+.gradient-dark {
+    background-color: #882222;
+}
+
+.gradient-light {
+    background-color: #ff6666;
+}
+
+.size-gradient {
+    display: flex;
+    align-items: center;
+    width: 40px;
+}
+
+.size-small, .size-medium, .size-large {
+    background-color: #ff3333;
+    border-radius: 80%;
+    margin-right: -3px;
+}
+
+.size-small {
+    width: 6px;
+    height: 6px;
+}
+
+.size-medium {
+    width: 10px;
+    height: 10px;
+}
+
+.size-large {
+    width: 14px;
+    height: 14px;
+}
+
+.with-icon {
+    align-items: flex-start;
+}
+
+.drag-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background-color: rgba(255, 51, 51, 0.2);
+    border-radius: 4px;
+    margin-top: -2px;
+    color: #ff6666;
+}
+
+/* Optional: add hover state for better contrast */
+.orb-legend:hover {
+    background-color: rgba(34, 34, 34, 0.95);
+}
+
+/* Add minimize button */
+.orb-legend-toggle {
+    position: absolute;
+    right: 7px;
+    top: 7px;
+    cursor: pointer;
+    color: #888;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.orb-legend-toggle:hover {
+    color: #fff;
+    background: rgba(255, 51, 51, 0.3);
+}
+
+.orb-legend.minimized {
+    height: 14px;
+    overflow: hidden;
+    padding: 10px 15px;
+}
+
+.orb-legend.minimized h3 {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+/* Reinforcement mode styles */
+.reinforcement-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.reinforcement-message {
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    background-color: rgba(34, 34, 34, 0.9);
+    padding: 15px 25px;
+    border-radius: 10px;
+    border-left: 4px solid #ff3333;
+    max-width: 80%;
+    text-align: center;
+}
+
+.reinforce-button {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff3333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    z-index: 200;
+    transition: background-color 0.2s ease;
+}
+
+.reinforce-button:hover {
+    background-color: #ff5555;
+}
+
+/* Highlight ring around nodes */
+.highlight-ring {
+    pointer-events: none;
+    animation: pulse-highlight 2s infinite alternate;
+}
+
+@keyframes pulse-highlight {
+    0% {
+        stroke-opacity: 0.4;
+        stroke-width: 1px;
+    }
+    100% {
+        stroke-opacity: 0.8;
+        stroke-width: 2px;
+    }
+}
+
+/* Loading states for nodes and buttons */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.paper-node-group.selected circle {
+    stroke: #ffcc00 !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 0 5px rgba(255, 204, 0, 0.5));
+}
+
+.paper-node-group.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Focus states for accessibility */
+.zoom-button:focus,
+.paper-popup-close:focus,
+.orb-legend-toggle:focus,
+.reinforce-button:focus {
+    outline: 2px solid #ff6666;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .paper-popup-container,
+    .zoom-controls,
+    .orb-legend,
+    .hint-message,
+    #keyword-search-container,
+    .reinforce-button,
+    .reinforcement-overlay {
+        display: none !important;
+    }
+    
+    body, html, #map-container, .map-container-rect {
+        background-color: white !important;
+        height: auto !important;
+    }
+    
+    .paper-node {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    .paper-title {
+        fill: #000 !important;
+        text-shadow: none !important;
+    }
 }
