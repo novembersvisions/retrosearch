@@ -45,7 +45,6 @@
         <img src="{{ url_for('static', filename='images/mag.png') }}" />
         <input placeholder="Filter by keywords..." id="keyword-search-bar">
       </div>
-      <p class="rocchio" id="rocchio" style="display: none;">Press 'r' to activate Rocchio</p>
     </div>
 
     <!-- All clusters go inside this single container -->
@@ -61,7 +60,7 @@
   <!-- Add particles.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
   <script src="{{ url_for('static', filename='js/base.js') }}"></script>
-  
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Initialize the map
@@ -76,7 +75,7 @@
           timer = setTimeout(() => fn.apply(this, args), wait);
         };
       }
-      kwInput.addEventListener('input', debounce(function() {
+      kwInput.addEventListener('input', debounce(function () {
         if (window.multiMap) {
           window.multiMap.keywordHighlightMap(kwInput.value);
         }
@@ -84,7 +83,7 @@
 
       // Basic search input handling
       const searchInput = document.getElementById('map-search-input');
-      
+
       const debouncedSearch = debounce(() => {
         const query = searchInput.value.trim();
         if (query && window.multiMap) window.multiMap.fetchData(query);

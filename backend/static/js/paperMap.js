@@ -31,9 +31,6 @@ class MultiClusterMap {
 
         // If you have a loading or "message" state, we can display that
         this.showMessage("Search for research papers to visualize")
-
-        // Set up reinforcement mode listeners
-        this.setupReinforceListeners();
     }
 
     //--------------------------------------
@@ -64,45 +61,45 @@ class MultiClusterMap {
     keywordHighlightMap(searchInput) {
         // Store reference to this class instance
         const self = this;
-        
+
         // Parse input to get keywords
         const raw = searchInput.toLowerCase().trim();
         const keywords = raw.split(/[\s,]+/).filter(k => k);
-        
+
         // First, reset all nodes to their original state
-        d3.selectAll(".paper-node-group").each(function(d) {
+        d3.selectAll(".paper-node-group").each(function (d) {
             const node = d3.select(this);
-            
+
             // Reset the fill color to the color determined by the class method
             node.select("circle").attr("fill", d.originalColor || self.getNodeColor(d));
-            
+
             // Remove any highlight rings
             node.select(".highlight-ring").remove();
-            
+
             // Reset stroke to default
             node.select("circle")
                 .attr("stroke", "#333")
                 .attr("stroke-width", 1.5);
         });
-        
+
         if (keywords.length === 0) return;
-        
+
         // Apply a subtle highlight to matching nodes
-        d3.selectAll(".paper-node-group").each(function(d) {
+        d3.selectAll(".paper-node-group").each(function (d) {
             const node = d3.select(this);
             const paper = d;
-            
+
             const abstract = (paper.abstract || "").toLowerCase();
             const title = (paper.title || "").toLowerCase();
             const hasAll = keywords.every(k => abstract.includes(k) || title.includes(k));
-            
+
             if (hasAll) {
                 // Apply a more elegant highlight effect
                 node.select("circle")
                     .attr("stroke", "#ffcc00")
                     .attr("stroke-width", 3)
                     .style("filter", "drop-shadow(0 0 5px rgba(255, 204, 0, 0.5))");
-                    
+
                 // Add an animated highlight ring
                 const currentRadius = parseFloat(node.select("circle").attr("r"));
                 node.append("circle")
@@ -173,7 +170,6 @@ class MultiClusterMap {
             // Create the initial cluster in center
             this.createCluster(data, { x: this.width / 2, y: this.height / 2 });
             document.getElementById("keyword-search-container").style.display = "flex";
-            document.getElementById("rocchio").style.display = "flex";
         } catch (err) {
             console.error("fetchData error:", err);
             this.showMessage(`Error: ${err.message}`);
