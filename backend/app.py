@@ -378,7 +378,7 @@ def search():
             cite_cnt = data[doc_idx].get("citation_count", 0)
             boost = modified_sigmoid(cite_cnt)
             # final = base * (1 + boost_factor * (boost - 0.5))
-            final_score = base_score * (1 + boost_factor * (boost - 0.5))
+            final_score = base_score * (1 + boost_factor * min(0,(boost - 0.5)) * 2)
             boosted.append((doc_idx, final_score))
 
         # 7) pick top N results
