@@ -709,3 +709,139 @@
         text-shadow: none !important;
     }
 }
+
+/* Reinforcement mode overlay */
+.reinforcement-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.reinforcement-message {
+    background-color: rgba(34, 34, 34, 0.95);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    padding: 15px 25px;
+    border-radius: 10px;
+    border-left: 4px solid #ff3333;
+    margin-top: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Selected paper highlight */
+.paper-node-group.selected circle {
+    stroke: #ffcc00 !important;
+    stroke-width: 3px !important;
+    filter: drop-shadow(0 0 5px rgba(255, 204, 0, 0.5));
+}
+
+/* Disable node dragging during reinforcement mode */
+.paper-node-group.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Loading state during reinforcement */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Optional: Add visual feedback when hovering during reinforcement mode */
+.reinforcement-mode .paper-node-group:hover circle {
+    cursor: pointer;
+    stroke: #ffcc00 !important;
+    stroke-width: 2px !important;
+    filter: drop-shadow(0 0 3px rgba(255, 204, 0, 0.3));
+}
+
+/* Animation for reinforcement message */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* Selected node highlight effect */
+.selected-highlight {
+    pointer-events: none;
+    animation: pulse-highlight 2s infinite alternate;
+}
+
+@keyframes pulse-highlight {
+    0% {
+        stroke-opacity: 0.4;
+        stroke-width: 2px;
+        r: attr(r);
+    }
+    100% {
+        stroke-opacity: 0.8;
+        stroke-width: 3px;
+        r: calc(attr(r) + 2px);
+    }
+}
+
+/* Animation for nodes fading out */
+@keyframes nodeDisappear {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--dx), var(--dy)) scale(0.5);
+    }
+}
+
+/* Animation for nodes appearing */
+@keyframes nodeAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.2);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Animation for loading message */
+@keyframes slideIn {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Transition effects for links */
+.paper-link {
+    transition: stroke-opacity 0.5s ease, stroke-width 0.3s ease;
+}
+
+/* Glow effect for reinforced papers */
+.paper-node.reinforced {
+    filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.6));
+}
