@@ -738,12 +738,6 @@ def explore_data():
                             if len(related_ids) >= 5:  # Limit to 5 relations total
                                 break
             
-            # If still no relations, add some random connections
-            if not related_ids:
-                count = min(3, len(papers) - 1)
-                random_indices = random.sample([j for j in range(len(papers)) if j != i], count)
-                related_ids = set([f"paper-{j}" for j in random_indices])
-            
             paper["related"] = list(related_ids)
         
         # Add hub-authority edges explicitly
@@ -1073,172 +1067,69 @@ def create_guided_journeys(papers):
     
     return journeys
     
-def process_citation_network(papers_data):
+import networkx as nx
+def process_citation_network(papers_data, top_n=10):
     """
-    Process the citation network to identify hubs and authorities.
-    
+    Identify hubs and authorities using the NetworkX HITS algorithm.
+
     Args:
-        papers_data: The original paper data
-    
+        papers_data (list): List of paper dicts, each optionally containing a 'cites' list of dicts with 'title'.
+        top_n (int): Number of top hubs and authorities to return.
+
     Returns:
-        Dict with hub and authority information
+        dict: {'hubs': [...], 'authorities': [...], 'edges': [...]}.
     """
-    # Map paper titles to indices for lookup
-    title_to_index = {paper.get("title"): i for i, paper in enumerate(papers_data)}
-    
-    # Identify potential hub papers (high citation counts)
-    # Get the percentile threshold - lowered to include more potential hubs
-    citation_counts = [paper.get("citation_count", 0) for paper in papers_data]
-    citation_counts = [count for count in citation_counts if count > 0]
-    
-    if citation_counts:
-        # Use a lower percentile to include more potential hubs - 75th instead of 85th
-        hub_threshold = np.percentile(citation_counts, 75)
-        # If threshold is too high, use a minimum value to ensure we have some hubs
-        hub_threshold = min(hub_threshold, 200)  # Cap threshold at 200
-    else:
-        hub_threshold = 50  # Lower default if no citation data
-    
-    print(f"Hub threshold: {hub_threshold} citations")
-    
-    # Mark papers as hubs if they have citation counts above the threshold
-    hub_papers = []
-    for i, paper in enumerate(papers_data):
-        citation_count = paper.get("citation_count", 0)
-        if citation_count >= hub_threshold:
-            hub_papers.append({
-                "index": i,
-                "title": paper.get("title"),
-                "citation_count": citation_count
-            })
-    
-    # If we found too few hubs, include additional papers based on relative citation count
-    if len(hub_papers) < 5 and citation_counts:
-        # Take top 5 papers by citation count
-        additional_count = 5 - len(hub_papers)
-        # Sort papers by citation count
-        sorted_papers = sorted(enumerate(papers_data), 
-                              key=lambda x: x[1].get("citation_count", 0), 
-                              reverse=True)
-        
-        # Add papers not already in hub_papers
-        existing_hub_indices = {hub["index"] for hub in hub_papers}
-        for i, paper in sorted_papers:
-            if i not in existing_hub_indices and len(hub_papers) < 5:
-                hub_papers.append({
-                    "index": i,
-                    "title": paper.get("title"),
-                    "citation_count": paper.get("citation_count", 0)
+    # Map titles to indices for lookup
+    title_to_index = {paper.get('title'): idx for idx, paper in enumerate(papers_data)}
+
+    # Create directed graph
+    G = nx.DiGraph()
+    G.add_nodes_from(range(len(papers_data)))
+
+    edges = []
+    # Add edges from each paper to its cited papers
+    for src_idx, paper in enumerate(papers_data):
+        src_cite_cnt = paper.get('citation_count', 1) or 1
+        for cited in paper.get('cites', []):
+            tgt_idx = title_to_index.get(cited.get('title'))
+            if tgt_idx is not None:
+                # Add edge with weight based on citation count
+                G.add_edge(src_idx, tgt_idx, weight=src_cite_cnt)
+                edges.append({
+                    'source': src_idx,
+                    'target': tgt_idx,
+                    'type': 'citation',
+                    'weight': src_cite_cnt
                 })
-    
-    print(f"Identified {len(hub_papers)} hub papers")
-    
-    # Identify papers cited by hubs (potential authorities)
-    authority_candidates = {}
-    
-    # First check "cites" field for explicit citations
-    for hub in hub_papers:
-        hub_index = hub["index"]
-        hub_paper = papers_data[hub_index]
-        
-        # Check if this hub paper cites other papers
-        if "cites" in hub_paper:
-            for cited_paper in hub_paper.get("cites", []):
-                cited_title = cited_paper.get("title")
-                
-                # Check if the cited paper is in our dataset
-                if cited_title in title_to_index:
-                    cited_index = title_to_index[cited_title]
-                    
-                    # Add or update the authority candidate
-                    if cited_index not in authority_candidates:
-                        authority_candidates[cited_index] = {
-                            "index": cited_index,
-                            "title": cited_title,
-                            "citing_hubs": [],
-                            "citation_count": cited_paper.get("citation_count", 0)
-                        }
-                    
-                    # Add the hub to the list of citing hubs
-                    authority_candidates[cited_index]["citing_hubs"].append(hub_index)
-    
-    # If we don't have enough explicit citations, infer some based on similarity
-    if len(authority_candidates) < 3:
-        # For each hub, find the most similar papers and treat them as potential authorities
-        for hub in hub_papers:
-            hub_index = hub["index"]
-            
-            # Skip if out of bounds for similarities
-            if hub_index >= len(paper_similarities):
-                continue
-                
-            # Get the most similar papers to this hub
-            similar_papers = paper_similarities[hub_index][:5]  # Top 5 similar papers
-            
-            for similar in similar_papers:
-                similar_id = similar.get("original_id")
-                
-                # Skip if this is another hub or out of bounds
-                if similar_id is None or similar_id >= len(papers_data) or similar_id in [h["index"] for h in hub_papers]:
-                    continue
-                
-                # Add as potential authority
-                if similar_id not in authority_candidates:
-                    authority_candidates[similar_id] = {
-                        "index": similar_id,
-                        "title": papers_data[similar_id].get("title", "Unknown"),
-                        "citing_hubs": [],
-                        "citation_count": papers_data[similar_id].get("citation_count", 0),
-                        "inferred": True  # Mark as inferred rather than explicit
-                    }
-                
-                # Add the hub to the list of citing hubs
-                if hub_index not in authority_candidates[similar_id]["citing_hubs"]:
-                    authority_candidates[similar_id]["citing_hubs"].append(hub_index)
-    
-    # Filter for papers cited by at least 1 hub (true authorities) - lowered from 2 to 1
-    # This will increase the chances of finding hub-authority relationships
-    authorities = [auth for auth in authority_candidates.values() 
-                  if len(auth["citing_hubs"]) >= 1]
-    
-    # If we still have too few authorities, add some based on other criteria
-    if len(authorities) < 3:
-        # Find papers with moderate citation counts that aren't hubs
-        hub_indices = {hub["index"] for hub in hub_papers}
-        for i, paper in enumerate(papers_data):
-            if i not in hub_indices and i not in authority_candidates:
-                citation_count = paper.get("citation_count", 0)
-                # Papers with moderate citation counts make good authorities
-                if citation_count > 0 and citation_count < hub_threshold:
-                    # Create synthetic authority with connection to 1st hub
-                    authorities.append({
-                        "index": i,
-                        "title": paper.get("title", "Unknown"),
-                        "citing_hubs": [hub_papers[0]["index"]] if hub_papers else [],
-                        "citation_count": citation_count,
-                        "synthetic": True  # Mark as synthetic
-                    })
-                    # Only add a few
-                    if len(authorities) >= 5:
-                        break
-    
-    print(f"Identified {len(authorities)} authority papers")
-    
-    # Create edge list for hub-authority connections
-    hub_authority_edges = []
-    for authority in authorities:
-        for hub_index in authority["citing_hubs"]:
-            hub_authority_edges.append({
-                "source": hub_index,
-                "target": authority["index"],
-                "type": "citation"
-            })
-    
-    return {
-        "hubs": hub_papers,
-        "authorities": authorities,
-        "edges": hub_authority_edges
-    }
+
+    # Compute HITS scores
+    hubs_scores, auth_scores = nx.hits(G, max_iter=100, tol=1e-8, normalized=True)
+
+    # Select top_n hubs
+    top_hubs = sorted(hubs_scores.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    hubs = [
+        {
+            'index': idx,
+            'title': papers_data[idx].get('title', 'Untitled Paper'),
+            'hub_score': score,
+            'citation_count': papers_data[idx].get('citation_count', 0)
+        }
+        for idx, score in top_hubs
+    ]
+
+    # Select top_n authorities
+    top_auths = sorted(auth_scores.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    authorities = [
+        {
+            'index': idx,
+            'title': papers_data[idx].get('title', 'Untitled Paper'),
+            'authority_score': score,
+            'citation_count': papers_data[idx].get('citation_count', 0)
+        }
+        for idx, score in top_auths
+    ]
+
+    return {'hubs': hubs, 'authorities': authorities, 'edges': edges}
     
 @app.route("/search_papers")
 def search_papers():
