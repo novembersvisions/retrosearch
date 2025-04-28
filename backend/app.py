@@ -830,174 +830,7 @@ def select_top_journeys(journeys, max_count=5):
     
     # Ensure we don't exceed max_count
     return selected_journeys[:max_count]
-    
-@app.route("/reinforce_map", methods=["POST"])
-def reinforce_map():
-    """API endpoint for Rocchio reinforcement of map data"""
-    try:
-        request_data = request.json
-        
-        # Extract data from request
-        center_id = request_data.get("center_id")
-        selected_ids = request_data.get("selected_ids", [])
-        unselected_ids = request_data.get("unselected_ids", [])
-        
-        if center_id is None or not selected_ids:
-            return jsonify({"error": "Missing required parameters"}), 400
-        
-        # Get center paper vector
-        if center_id < 0 or center_id >= len(document_vectors_normalized):
-            return jsonify({"error": "Invalid center paper ID"}), 400
-            
-        center_vector = document_vectors_normalized[center_id]
-        
-        # Get selected paper vectors (relevant documents)
-        relevant_vectors = []
-        for paper_id in selected_ids:
-            if 0 <= paper_id < len(document_vectors_normalized):
-                relevant_vectors.append(document_vectors_normalized[paper_id])
-        
-        # Get unselected paper vectors (non-relevant documents)
-        nonrelevant_vectors = []
-        for paper_id in unselected_ids:
-            if 0 <= paper_id < len(document_vectors_normalized):
-                nonrelevant_vectors.append(document_vectors_normalized[paper_id])
-        
-        # Apply Rocchio algorithm
-        # Convert lists to numpy arrays
-        relevant_vectors_array = np.array(relevant_vectors)
-        nonrelevant_vectors_array = np.array(nonrelevant_vectors)
-        
-        updated_query = rocchio_feedback(
-            center_vector,
-            relevant_vectors_array,
-            nonrelevant_vectors_array,
-            alpha=1.0,
-            beta=0.75,
-            gamma=0.15
-        )
-        
-        print("Original query vector (first 5):", center_vector[:5])
-        print("Updated query vector (first 5):", updated_query[:5])
-
-        # Normalize the updated query vector
-        updated_query_norm = normalize(updated_query.reshape(1, -1))[0]
-        
-        # Find papers similar to the updated query
-        scores = updated_query_norm @ document_vectors_normalized.T
-
-        print(f"Center vector: {center_vector[:5]}")
-        print(f"Num relevant: {len(relevant_vectors)}")
-        print(f"Num non-relevant: {len(nonrelevant_vectors)}")
-        print(f"Updated query (first 5): {updated_query[:5]}")
-        print(f"Normalized query (first 5): {updated_query_norm[:5]}")
-        print(f"Scores shape: {scores.shape}")
-        
-        # Get top papers, excluding center and already selected papers
-        exclude_ids = [center_id] + selected_ids
-        scored_papers = [(i, score) for i, score in enumerate(scores) 
-                          if i not in exclude_ids]
-                          
-        # Sort by similarity score
-        scored_papers.sort(key=lambda x: x[1], reverse=True)
-        
-        # Take top papers (limit to 15 - len(selected_papers))
-        max_related = 15 - len(selected_ids)
-        top_indices = [idx for idx, _ in scored_papers[:max_related]]
-        
-        # Prepare related papers data including selected papers
-        related_papers = []
-        
-        # First add the selected papers
-        for i, paper_id in enumerate(selected_ids, 1):
-            if 0 <= paper_id < len(data):
-                paper = data[paper_id]
-                related_papers.append({
-                    "id": i,
-                    "original_id": paper_id,
-                    "title": paper.get("title", "Unknown"),
-                    "abstract": paper.get("abstract", ""),
-                    "link": paper.get("link", ""),
-                    "score": 1.0,  # Mark as fully relevant
-                    "citations": paper.get("citation_count", 0)
-                })
-        
-        # Then add newly found papers
-        start_id = len(related_papers) + 1
-        for i, paper_id in enumerate(top_indices, start_id):
-            paper = data[paper_id]
-            related_papers.append({
-                "id": i,
-                "original_id": paper_id,
-                "title": paper.get("title", "Unknown"),
-                "abstract": paper.get("abstract", ""),
-                "link": paper.get("link", ""),
-                "score": float(scores[paper_id]),
-                "citations": paper.get("citation_count", 0)
-            })
-        
-        # Format data for the visualization
-        map_data = {
-            "center": {
-                "id": 0,
-                "original_id": center_id,
-                "title": data[center_id].get("title", "Unknown"),
-                "abstract": data[center_id].get("abstract", ""),
-                "link": data[center_id].get("link", ""),
-                "score": 1.0,
-                "citations": data[center_id].get("citation_count", 0)
-            },
-            "related": related_papers
-        }
-        
-        # Convert any NumPy types to Python standard types for JSON serialization
-        map_data = convert_to_serializable(map_data)
-        
-        return jsonify(map_data)
-    except Exception as e:
-        print(f"Error in reinforcement: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    
-def rocchio_feedback(
-    query: np.ndarray,
-    relevant_docs: np.ndarray,
-    nonrelevant_docs: np.ndarray,
-    alpha: float = 1.0,
-    beta: float = 0.75,
-    gamma: float = 0.15
-    ) -> np.ndarray:
-        """
-        Apply Rocchio relevance feedback (reinforcement) to update a query vector.
-        
-        Parameters
-        ----------
-        query : np.ndarray
-            Original or current query vector (shape: [n_features]).
-        relevant_docs : np.ndarray
-            Array of relevant document vectors (shape: [n_rel, n_features]).
-        nonrelevant_docs : np.ndarray
-            Array of non-relevant document vectors (shape: [n_nonrel, n_features]).
-        alpha : float
-            Weight for the original query vector.
-        beta : float
-            Weight for relevant-document centroid.
-        gamma : float
-            Weight for non-relevant-document centroid.
-        
-        Returns
-        -------
-        np.ndarray
-            Updated query vector (shape: [n_features]).
-        """
-        # Compute centroids (handle empty sets gracefully)
-        rel_centroid = np.mean(relevant_docs, axis=0) if len(relevant_docs) > 0 else np.zeros_like(query)
-        nonrel_centroid = np.mean(nonrelevant_docs, axis=0) if len(nonrelevant_docs) > 0 else np.zeros_like(query)
-        
-        # Rocchio update rule
-        updated_query = alpha * query + beta * rel_centroid - gamma * nonrel_centroid
-        
-        return updated_query
-
+  
 def determine_cluster(title, abstract, tag=""):
     """Determine the research domain/cluster for a paper based on its title, abstract, and tag"""
     # First check if the tag directly maps to a cluster
@@ -1468,6 +1301,120 @@ def search_papers():
     except Exception as e:
         print(f"Error in paper search: {str(e)}")
         return jsonify({"error": str(e)})
+    
+#  Reinforcement-specific code
+@app.route("/reinforce", methods=['POST'])
+def reinforce():
+    """
+    Endpoint to handle paper reinforcement.
+    Takes center paper ID and selected paper IDs, returns new cluster data
+    with the center paper and papers similar to the selected ones.
+    """
+    request_data = request.get_json()
+    center_id = request_data.get('center_id')
+    selected_ids = request_data.get('selected_ids', [])
+    
+    if center_id is None or not selected_ids:
+        return jsonify({"error": "Invalid request data"}), 400
+    
+    try:
+        center_id = int(center_id)
+        selected_ids = [int(sid) for sid in selected_ids]
+        
+        if center_id < 0 or center_id >= len(data) or any(sid < 0 or sid >= len(data) for sid in selected_ids):
+            return jsonify({"error": "Invalid paper IDs"}), 400
+        
+        # Get center paper data
+        center_paper = data[center_id]
+        
+        # For each selected paper, find its most similar papers
+        all_similar_papers = []
+        seen_ids = set([center_id] + selected_ids)  # Track papers we've already considered
+        
+        for sid in selected_ids:
+            if sid < len(paper_similarities):
+                similar_papers = paper_similarities[sid]
+                for paper in similar_papers:
+                    original_id = paper.get("original_id")
+                    if original_id is not None and original_id not in seen_ids:
+                        all_similar_papers.append((paper, float(paper.get("score", 0))))
+                        seen_ids.add(original_id)
+        
+        # Sort all similar papers by score and take top N
+        all_similar_papers.sort(key=lambda x: x[1], reverse=True)
+        top_similar_papers = []
+        
+        # First, include the selected papers themselves
+        for i, sid in enumerate(selected_ids):
+            paper_data = data[sid]
+            top_similar_papers.append({
+                "id": i + 1,
+                "original_id": sid,
+                "title": paper_data.get("title", "Unknown"),
+                "abstract": paper_data.get("abstract", ""),
+                "link": paper_data.get("link", ""),
+                "score": 0.95,  # High score for selected papers
+                "citations": paper_data.get("citation_count", 0)
+            })
+        
+        # Then add the most similar papers to fill up to 15 total
+        next_id = len(selected_ids) + 1
+        for paper, score in all_similar_papers:
+            if len(top_similar_papers) >= 15:
+                break
+            
+            original_id = paper.get("original_id")
+            if original_id is not None and original_id < len(data):
+                paper_data = data[original_id]
+                top_similar_papers.append({
+                    "id": next_id,
+                    "original_id": original_id,
+                    "title": paper_data.get("title", paper.get("title", "Unknown")),
+                    "abstract": paper_data.get("abstract", paper.get("abstract", "")),
+                    "link": paper_data.get("link", paper.get("link", "")),
+                    "score": score,
+                    "citations": paper_data.get("citation_count", 0)
+                })
+                next_id += 1
+        
+        # If we still don't have enough papers, add some random ones
+        while len(top_similar_papers) < 15:
+            # Find a random paper that we haven't used yet
+            random_id = random.randint(0, len(data) - 1)
+            if random_id not in seen_ids:
+                paper_data = data[random_id]
+                top_similar_papers.append({
+                    "id": next_id,
+                    "original_id": random_id,
+                    "title": paper_data.get("title", "Unknown"),
+                    "abstract": paper_data.get("abstract", ""),
+                    "link": paper_data.get("link", ""),
+                    "score": 0.5,  # Lower score for random papers
+                    "citations": paper_data.get("citation_count", 0)
+                })
+                seen_ids.add(random_id)
+                next_id += 1
+        
+        # Format the response
+        response_data = {
+            "center": {
+                "id": 0,
+                "original_id": center_id,
+                "title": center_paper.get("title", "Unknown"),
+                "abstract": center_paper.get("abstract", ""),
+                "link": center_paper.get("link", ""),
+                "score": 1.0,
+                "citations": center_paper.get("citation_count", 0)
+            },
+            "related": top_similar_papers
+        }
+        
+        response_data = convert_to_serializable(response_data)
+        return jsonify(response_data)
+    
+    except Exception as e:
+        print(f"Error in reinforcement: {str(e)}")
+        return jsonify({"error": str(e)}), 500 
     
 if 'DB_NAME' not in os.environ:
     app.run(debug=True, host="0.0.0.0", port=5000)
