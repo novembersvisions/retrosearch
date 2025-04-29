@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initialDataLoaded: false,
         
         activeJourneyHighlight: null, // Track if a journey is actively highlighted
+        
     };
 
     let hubAuthorityLinks = [];
@@ -1320,6 +1321,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear any existing clear search button first to prevent duplicates
         const existingClearButtons = document.querySelectorAll('.clear-search-btn');
         existingClearButtons.forEach(btn => btn.remove());
+
+        elements.openInOrb = document.getElementById('open-in-orb');
+        elements.openInOrb.addEventListener('click', (event) => {
+            event.preventDefault();
+            
+            // Get the current paper title
+            const paperTitle = elements.paperTitle.textContent;
+            
+            if (paperTitle) {
+                // Store the paper title in localStorage for the Orb page to access
+                localStorage.setItem('pendingOrbSearch', paperTitle);
+                
+                // Open the Orb page in a new tab/window (just the base URL)
+                window.open('/map', '_blank');
+            }
+        });
         
         // Close paper detail panel
         elements.closePanel.addEventListener('click', () => {

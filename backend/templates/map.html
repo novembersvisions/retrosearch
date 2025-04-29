@@ -107,6 +107,39 @@
 
       // Optionally auto-focus
       searchInput.focus();
+
+      const pendingSearch = localStorage.getItem('pendingOrbSearch');
+    
+    if (pendingSearch) {
+      // Clear the stored value immediately to prevent it from persisting
+      localStorage.removeItem('pendingOrbSearch');
+      
+      // Get the search input element
+      const searchInput = document.getElementById('map-search-input');
+      
+      if (searchInput) {
+        // Fill the search input with the paper title
+        searchInput.value = pendingSearch;
+        
+        // Give the page a moment to initialize before triggering the search
+        setTimeout(function() {
+          // Find and programmatically execute the search function
+          if (window.multiMap) {
+            window.multiMap.fetchData(pendingSearch);
+          } else {
+            // Alternative approach: simulate the Enter key press
+            const event = new KeyboardEvent('keypress', {
+              key: 'Enter',
+              code: 'Enter',
+              keyCode: 13,
+              which: 13,
+              bubbles: true
+            });
+            searchInput.dispatchEvent(event);
+          }
+        }, 500); // Half second delay
+      }
+    }
     });
   </script>
 </body>

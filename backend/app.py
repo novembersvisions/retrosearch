@@ -411,6 +411,50 @@ def map_data():
         return jsonify({"center": None, "related": []})
     
     try:
+        # First, check for exact title matches before any transformation
+        exact_match_idx = None
+        for idx, paper in enumerate(data):
+            if paper.get("title", "").lower() == query.lower():
+                exact_match_idx = idx
+                break
+        
+        # If we found an exact match, use that paper as the center
+        if exact_match_idx is not None:
+            center_paper = data[exact_match_idx]
+            
+            # Get related papers from precomputed similarities
+            related_papers = []
+            if exact_match_idx < len(paper_similarities):
+                similar_papers = paper_similarities[exact_match_idx]
+                
+                # Add citation counts to related papers
+                for similar_paper in similar_papers:
+                    similar_id = similar_paper.get("original_id")
+                    if similar_id is not None and similar_id >= 0 and similar_id < len(data):
+                        # Add citation count from original data
+                        similar_paper["citations"] = data[similar_id].get("citation_count", 0)
+                
+                related_papers = similar_papers
+            
+            # Format data for visualization
+            map_data = {
+                "center": {
+                    "id": 0,
+                    "original_id": exact_match_idx,
+                    "title": center_paper.get("title", "Unknown"),
+                    "abstract": center_paper.get("abstract", ""),
+                    "link": center_paper.get("link", ""),
+                    "score": 1.0,  # Main paper has highest score
+                    "citations": center_paper.get("citation_count", 0)
+                },
+                "related": related_papers
+            }
+            
+            # Convert any NumPy types to Python standard types for JSON serialization
+            map_data = convert_to_serializable(map_data)
+            return jsonify(map_data)
+        
+        # If no exact match, continue with the original logic
         # Transform query to TF-IDF
         query_tfidf = vectorizer.transform([query])
         if query_tfidf.sum() == 0:
@@ -1089,17 +1133,15 @@ def process_citation_network(papers_data, top_n=10):
     edges = []
     # Add edges from each paper to its cited papers
     for src_idx, paper in enumerate(papers_data):
-        src_cite_cnt = paper.get('citation_count', 1) or 1
         for cited in paper.get('cites', []):
             tgt_idx = title_to_index.get(cited.get('title'))
             if tgt_idx is not None:
                 # Add edge with weight based on citation count
-                G.add_edge(src_idx, tgt_idx, weight=src_cite_cnt)
+                G.add_edge(src_idx, tgt_idx)
                 edges.append({
                     'source': src_idx,
                     'target': tgt_idx,
                     'type': 'citation',
-                    'weight': src_cite_cnt
                 })
 
     # Compute HITS scores

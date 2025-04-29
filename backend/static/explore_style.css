@@ -1294,3 +1294,13 @@
 .paper-node.search-highlight .node-glow {
     animation: pulse-highlight 2s infinite;
 }
+
+.paper-link.orb-link {
+    background-color: #3366cc; /* Blue color to differentiate from View Paper */
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.paper-link.orb-link:hover {
+    background-color: #2855b0;
+}
