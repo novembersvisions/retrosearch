@@ -72,7 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
         paperAbstract: document.getElementById('paper-abstract'),
         citationCount: document.getElementById('citation-count'),
         publicationYear: document.getElementById('publication-year'),
-        readingLevel: document.getElementById('reading-level'),
         paperLink: document.getElementById('paper-link'),
         relatedPapersList: document.getElementById('related-papers-list'),
         domainFilters: document.getElementById('domain-filters'),
@@ -901,7 +900,6 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.paperAbstract.textContent = paper.abstract;
         elements.citationCount.textContent = paper.citations;
         elements.publicationYear.textContent = paper.year;
-        elements.readingLevel.textContent = paper.readingLevel;
         
         // Change this line to make the link open our popup instead
         elements.paperLink.href = "javascript:void(0)";

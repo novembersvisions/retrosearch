@@ -18,20 +18,24 @@
     <div id="particles-js"></div>
     
     <div class="full-body-container">
-        <div class="top-text">
-            <div class="research-title">
+        <div style="position: relative; width: 100%; padding-top: 30px; margin-bottom: 20px;">
+            <!-- Title moved to top left with inline styles -->
+            <div class="research-title" style="position: absolute; top: 25px; left: 50%; transform: translateX(-50%); font-size: 40px; letter-spacing: -2px; text-align: center;">
                 <span id="re-text">Re</span><span id="search-text">Search</span> <span class="galaxy-text">Explore</span>
             </div>
             
-            <!-- Navigation bar positioned the same as in base.html -->
-            <div class="nav-container">
-                <a href="/" class="nav-link">Home</a>
-                <a href="/map" class="nav-link">Orb</a>
-                <a href="/explore" class="nav-link">Explore</a>
-                <a href="/team" class="nav-link">Team</a>
+            <!-- Navigation bar centered at the top -->
+            <div style="display: flex; justify-content: center; margin: 0 auto; padding-top: 70px;">
+                <div class="nav-container">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/map" class="nav-link">Orb</a>
+                    <a href="/explore" class="nav-link">Explore</a>
+                    <a href="/team" class="nav-link">Team</a>
+                </div>
             </div>
             
-            <div class="explore-subtitle">Navigate the universe of research papers</div>
+            <!-- Subtitle centered below the nav -->
+            <div class="explore-subtitle" style="text-align: center; margin-top: 10px;">Navigate the universe of research papers</div>
         </div>
 
         <!-- Explore content container -->
@@ -49,7 +53,7 @@
                 <div class="panel-section">
                     <h3>Search Papers</h3>
                     <div class="search-container">
-                        <input type="text" id="paper-search" placeholder="Search for papers..." class="search-input">
+                        <input type="text" id="paper-search" placeholder="Search for papers" class="search-input">
                         <button id="search-button" class="search-button">
                             <i class="fas fa-search"></i>
                         </button>
@@ -119,11 +123,7 @@
                                 <div class="stat-value" id="publication-year">--</div>
                                 <div class="stat-label">Year</div>
                             </div>
-                            <div class="stat-item">
-                                <div class="stat-icon"><i class="fas fa-graduation-cap"></i></div>
-                                <div class="stat-value" id="reading-level">--</div>
-                                <div class="stat-label">Reading Level</div>
-                            </div>
+
                         </div>
                         <a id="paper-link" href="#" target="_blank" class="paper-link">
                             <i class="fas fa-external-link-alt"></i> View Paper

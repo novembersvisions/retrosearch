@@ -43,10 +43,10 @@
 
 /* Control Panel Styles */
 .control-panel {
-    width: 300px;
+    width: 210px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
     padding: 20px;
     margin-right: 0;
     z-index: 5;
@@ -144,9 +144,9 @@
 
 .journey-item {
     background-color: #2a2a2a;
-    border-radius: 10px;
+    border-radius: 25px;
     padding: 15px;
-    border-left: 3px solid;
+    border: 1px solid;
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -157,23 +157,23 @@
 }
 
 .journey-item.ml {
-    border-left-color: #FF5555;
+    border-color: #ff555590;
 }
 
 .journey-item.cv {
-    border-left-color: #55AAFF;
+    border-color: #55aaff8f;
 }
 
 .journey-item.nlp {
-    border-left-color: #FFAA55;
+    border-color: #ffaa5595;
 }
 
 .journey-item.rl {
-    border-left-color: #55FF55;
+    border-color: #55ff558b;
 }
 
 .journey-item.gen {
-    border-left-color: #AA55FF;
+    border-color: #aa55ff8d;
 }
 
 .journey-title {
@@ -249,13 +249,14 @@
 
 .toggle-btn {
     background: none;
+    width: 50%;
     border: none;
     color: #bbb;
     padding: 5px 10px;
     border-radius: 15px;
     cursor: pointer;
     font-family: 'Montserrat', sans-serif;
-    font-size: 12px;
+    font-size: 9px;
     transition: all 0.2s ease;
 }
 
@@ -499,6 +500,8 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
+    width: 70%;
+    align-items: center;
 }
 
 .stat-item {
@@ -1210,7 +1213,8 @@
     padding: 8px 15px;
     color: #fff;
     font-family: 'Montserrat', sans-serif;
-    font-size: 14px;
+    width: 50%;
+    font-size: 10px;
     outline: none;
     transition: all 0.2s ease;
 }
