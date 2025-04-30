@@ -55,7 +55,17 @@
       <h3 class="tooltip-title"></h3>
       <p class="tooltip-abstract"></p>
     </div>
-  </div>
+
+    <!-- Favorites Container -->
+    <div id="favorites-container" class="favorites-container">
+      <div class="favorites-header">
+        <h3>Favorite Papers</h3>
+      </div>
+      <div class="favorites-list" id="favorites-list">
+        <!-- Favorite papers will be added here dynamically -->
+        <div class="no-favorites-message">No favorites yet. Click the heart icon in paper popups to add them.</div>
+      </div>
+    </div>
 
   <!-- Add particles.js library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
@@ -142,6 +152,8 @@
     }
     });
   </script>
+
+
 </body>
 
 </html>

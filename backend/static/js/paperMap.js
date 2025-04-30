@@ -32,6 +32,9 @@ class MultiClusterMap {
         this.currentCenterPaperId = null;
         this.setupReinforcementListeners();
 
+        this.favorites = JSON.parse(localStorage.getItem('paperFavorites')) || {};
+        this.setupFavoritesContainer();
+
 
         // If you have a loading or "message" state, we can display that
         this.showMessage("Search for research papers to visualize")
@@ -1362,67 +1365,213 @@ class MultiClusterMap {
     //-------------------
     openPaperLink(d) {
         // Instead of opening a new window, open the PDF in a popup:
-        this.createPaperPopup(d.link, d.title);
+        this.createPaperPopup(d.link, d.title, d);
     }
 
-    createPaperPopup(pdfUrl, paperTitle) {
+    createPaperPopup(pdfUrl, paperTitle, paperData) {
         // 1. Create a semi-transparent overlay
         const overlay = document.createElement('div');
         overlay.className = 'paper-popup-container';
-
+    
         // 2. Create the popup content wrapper
         const popupContent = document.createElement('div');
         popupContent.className = 'paper-popup-content';
-
+    
         // 3. Header with close button
         const header = document.createElement('div');
         header.className = 'paper-popup-header';
-
+    
         const titleEl = document.createElement('h3');
         titleEl.className = 'paper-popup-title';
         titleEl.textContent = paperTitle || "Paper PDF";
-
+    
         const closeBtn = document.createElement('button');
         closeBtn.className = 'paper-popup-close';
         closeBtn.innerHTML = '&times;';
         closeBtn.onclick = () => {
             document.body.removeChild(overlay);
         };
-
+    
         header.appendChild(titleEl);
         header.appendChild(closeBtn);
-
+    
         // 4. Body with the PDF in an iframe
         const body = document.createElement('div');
         body.className = 'paper-popup-body';
-
+    
         const iframe = document.createElement('iframe');
         iframe.className = 'paper-popup-iframe';
         iframe.src = pdfUrl; // Link to your PDF (arXiv link, etc.)
-
+    
         body.appendChild(iframe);
-
-        // 5. Footer (optional: external link or other controls)
+    
+        // 5. Footer with favorite button and external link
         const footer = document.createElement('div');
         footer.className = 'paper-popup-footer';
-
+    
+        // Favorite button
+        const favoriteButton = document.createElement('button');
+        favoriteButton.className = 'favorite-button';
+        favoriteButton.setAttribute('data-paper-id', paperData.original_id);
+        
+        // Check if this paper is already a favorite
+        const isFavorited = !!this.favorites[paperData.original_id];
+        if (isFavorited) {
+            favoriteButton.classList.add('favorited');
+            favoriteButton.innerHTML = '<i class="fas fa-heart"></i> Favorited';
+        } else {
+            favoriteButton.innerHTML = '<i class="far fa-heart"></i> Favorite';
+        }
+        
+        favoriteButton.onclick = () => {
+            this.toggleFavorite(paperData);
+        };
+    
         const externalLink = document.createElement('a');
         externalLink.className = 'paper-popup-external-link';
         externalLink.href = pdfUrl;
         externalLink.target = '_blank';
         externalLink.textContent = 'Open in new tab';
-
+    
+        const favoriteWrapper = document.createElement('div');
+        favoriteWrapper.className = 'paper-popup-favorite';
+        favoriteWrapper.appendChild(favoriteButton);
+    
+        footer.appendChild(favoriteWrapper);
         footer.appendChild(externalLink);
-
+    
         // 6. Put it all together
         popupContent.appendChild(header);
         popupContent.appendChild(body);
         popupContent.appendChild(footer);
         overlay.appendChild(popupContent);
-
+    
         // 7. Add overlay to document
         document.body.appendChild(overlay);
     }
+
+    //--------------------------------------
+//  FAVORITES FUNCTIONALITY
+//--------------------------------------
+setupFavoritesContainer() {
+    // Create favorites toggle button
+    const toggleBtn = document.createElement('button');
+    toggleBtn.onclick = () => this.toggleFavoritesContainer();
+    document.body.appendChild(toggleBtn);
+
+    // Setup event listeners for favorites container
+    const container = document.getElementById('favorites-container');
+    if (container) {
+        // Close button
+        const closeBtn = container.querySelector('.favorites-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                container.classList.add('hidden');
+            });
+        }
+    }
+
+    // Initial render of favorites
+    this.renderFavorites();
+}
+
+toggleFavoritesContainer() {
+    const container = document.getElementById('favorites-container');
+    if (container) {
+        container.classList.toggle('hidden');
+    }
+}
+
+toggleFavorite(paper) {
+    const paperId = paper.original_id;
+    
+    if (this.favorites[paperId]) {
+        // Remove from favorites
+        delete this.favorites[paperId];
+    } else {
+        // Add to favorites with the correct fields from the paper object
+        this.favorites[paperId] = {
+            id: paperId,
+            title: paper.title || "Unknown Title",
+            link: paper.link || "#",
+            abstract: paper.abstract || "",
+            citations: paper.citations || 0, // This appears to be citation_count in the original data
+            timestamp: Date.now()
+        };
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('paperFavorites', JSON.stringify(this.favorites));
+    
+    // Update the UI
+    this.renderFavorites();
+    this.updateFavoriteButton(paper);
+}
+
+updateFavoriteButton(paper) {
+    const paperId = paper.original_id;
+    const isFavorited = !!this.favorites[paperId];
+    
+    // Find the favorite button for this paper
+    const favoriteBtn = document.querySelector(`.favorite-button[data-paper-id="${paperId}"]`);
+    if (favoriteBtn) {
+        if (isFavorited) {
+            favoriteBtn.classList.add('favorited');
+            favoriteBtn.innerHTML = '<i class="fas fa-heart"></i> Favorited';
+        } else {
+            favoriteBtn.classList.remove('favorited');
+            favoriteBtn.innerHTML = '<i class="far fa-heart"></i> Favorite';
+        }
+    }
+}
+
+renderFavorites() {
+    const favoritesListEl = document.getElementById('favorites-list');
+    if (!favoritesListEl) return;
+    
+    // Clear existing content
+    favoritesListEl.innerHTML = '';
+    
+    // Get favorites as array and sort by recently added
+    const favoritesArray = Object.values(this.favorites);
+    favoritesArray.sort((a, b) => b.timestamp - a.timestamp);
+    
+    if (favoritesArray.length === 0) {
+        favoritesListEl.innerHTML = '<div class="no-favorites-message">No favorites yet. Click the heart icon in paper popups to add them.</div>';
+        return;
+    }
+    
+    // Add each favorite to the list
+    favoritesArray.forEach(paper => {
+        const favoriteItem = document.createElement('div');
+        favoriteItem.className = 'favorite-item';
+        
+        favoriteItem.innerHTML = `
+            <div class="favorite-item-title">${paper.title}</div>
+            <div class="favorite-item-meta">
+            </div>
+            <div class="favorite-item-meta">
+                <div>Citations: ${paper.citations || 0}</div>
+            </div>
+            <div class="favorite-item-actions">
+                <a href="${paper.link}" target="_blank" class="favorite-item-link">Open paper in external tab</a>
+                <button class="favorite-item-remove" data-paper-id="${paper.id}">Remove</button>
+            </div>
+        `;
+        
+        favoritesListEl.appendChild(favoriteItem);
+        
+        // Add event listener to remove button
+        const removeBtn = favoriteItem.querySelector('.favorite-item-remove');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                delete this.favorites[paper.id];
+                localStorage.setItem('paperFavorites', JSON.stringify(this.favorites));
+                this.renderFavorites();
+            });
+        }
+    });
+}
 
 }
 

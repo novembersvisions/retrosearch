@@ -795,8 +795,8 @@ def explore_data():
         
         # Create guided journeys (limited to 5)
         all_journeys = create_guided_journeys(papers)
-        # Select only the top 5 journeys
-        journeys = select_top_journeys(all_journeys, 5)
+        # Select only the top 3 journeys
+        journeys = select_top_journeys(all_journeys, 3)
         
         # Format data for the visualization
         explore_data = {
@@ -1092,7 +1092,7 @@ def create_guided_journeys(papers):
             if len(recent_papers) >= 3:
                 # Sort by citation count for recent papers
                 recent_sorted = sorted(recent_papers, key=lambda p: p.get("citations", 0), reverse=True)
-                recent_journey = recent_sorted[:min(5, len(recent_sorted))]
+                recent_journey = recent_sorted[:min(3, len(recent_sorted))]
                 
                 title = f"Recent Advances in {cluster}: {tag.upper()}"
                 description = f"Discover the most recent and impactful papers in {cluster}."

@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         journeyHighlightColor: '#FFFFFF',
         backgroundColor: '#121212',
         starColors: ['#FFFFFF', '#AAAAAA', '#888888', '#666666', '#444444'],
-        starCount: 0,
+        starCount: 1000,
         hubAuthorityLinkColor: '#FFFFFF',
         hubAuthorityLinkOpacity: 0.7,
         regularLinkColor: '#444444',
@@ -522,18 +522,63 @@ document.addEventListener('DOMContentLoaded', function() {
         const offsetX = (extendedWidth - GALAXY_CONFIG.width) / 2;
         const offsetY = (extendedHeight - GALAXY_CONFIG.height) / 2;
         
-        // Generate random stars in the extended area
+        // Enhanced star size range
+        const minRadius = 0.8;  // Increased minimum size
+        const maxRadius = 2.5;  // Increased maximum size
+        
+        // Enhanced star colors with better visibility while keeping them subtle
+        const enhancedStarColors = [
+            '#FFFFFF',  // Pure white (more visible)
+            '#F8F8FF',  // Ghost white
+            '#FFFAFA',  // Snow white
+            '#F0F8FF',  // Alice blue (slight blue tint)
+            '#E6E6FA',  // Lavender (subtle purple)
+            '#FFFACD',  // Lemon chiffon (subtle yellow)
+            '#F0FFF0',  // Honeydew (subtle green)
+            '#FFE4E1',  // Misty rose (subtle pink)
+        ];
+        
+        // Generate stars with improved visibility distribution
         for (let i = 0; i < GALAXY_CONFIG.starCount; i++) {
+            // Create a size distribution that favors medium-sized stars
+            // Using a weighted approach for better visibility
+            let sizeRandom = Math.random();
+            let radius;
+            
+            if (sizeRandom < 0.6) {
+                // 60% medium stars
+                radius = minRadius + (maxRadius - minRadius) * 0.4 + Math.random() * (maxRadius - minRadius) * 0.3;
+            } else if (sizeRandom < 0.85) {
+                // 25% small stars
+                radius = minRadius + Math.random() * (maxRadius - minRadius) * 0.3;
+            } else {
+                // 15% large, more prominent stars
+                radius = minRadius + (maxRadius - minRadius) * 0.7 + Math.random() * (maxRadius - minRadius) * 0.3;
+            }
+            
+            // Determine if star should blink (20% of stars)
+            const shouldBlink = Math.random() > 0.8;
+            
+            // Choose color with preference for brighter colors for larger stars
+            let colorIndex;
+            if (radius > (minRadius + maxRadius) * 0.6) {
+                // Brighter colors for larger stars (first 3 colors are brighter)
+                colorIndex = Math.floor(Math.random() * 3);
+            } else {
+                // Any color for regular stars
+                colorIndex = Math.floor(Math.random() * enhancedStarColors.length);
+            }
+            
             state.starNodes.push({
                 x: Math.random() * extendedWidth - offsetX,
                 y: Math.random() * extendedHeight - offsetY,
-                radius: Math.random() * 1.5,
-                color: GALAXY_CONFIG.starColors[Math.floor(Math.random() * GALAXY_CONFIG.starColors.length)],
-                blink: Math.random() > 0.7
+                radius: radius,
+                color: enhancedStarColors[colorIndex],
+                blink: shouldBlink
             });
         }
         
-        // Create star elements
+        // Create star elements with improved aesthetics
         const stars = state.container.append('g')
             .attr('class', 'star-container')
             .selectAll('circle')
@@ -547,28 +592,50 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr('fill', d => d.color)
             .style('opacity', d => d.blink ? 0.7 : 1);
         
-        // Add blinking animation to some stars
+        // Add subtle glow effect to larger stars
+        stars.filter(d => d.radius > (minRadius + maxRadius) * 0.6)
+            .attr('filter', 'url(#star-glow)');
+        
+        // Make sure we have a filter definition somewhere in your SVG
+        if (!state.container.select('defs').node()) {
+            state.container.append('defs')
+                .html(`
+                    <filter id="star-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="1" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                `);
+        }
+        
+        // Add blinking animation with improved parameters
         stars.filter(d => d.blink)
             .each(function(d) {
-                const duration = 1000 + Math.random() * 3000;
-                const delay = Math.random() * 3000;
+                // More natural blinking with varied durations
+                const minDuration = 1500;
+                const maxDuration = 4000;
+                const duration = minDuration + Math.random() * (maxDuration - minDuration);
+                const delay = Math.random() * 2000;
+                
+                // Vary the opacity range based on star size for more natural effect
+                const minOpacity = d.radius < (minRadius + maxRadius) * 0.5 ? 0.3 : 0.5;
+                const maxOpacity = d.radius > (minRadius + maxRadius) * 0.6 ? 1.0 : 0.9;
                 
                 d3.select(this)
                     .transition()
                     .delay(delay)
                     .duration(duration)
-                    .style('opacity', 0.3)
+                    .style('opacity', minOpacity)
                     .transition()
                     .duration(duration)
-                    .style('opacity', 0.9)
+                    .style('opacity', maxOpacity)
                     .on('end', function repeat() {
                         d3.select(this)
                             .transition()
                             .duration(duration)
-                            .style('opacity', 0.3)
+                            .style('opacity', minOpacity)
                             .transition()
                             .duration(duration)
-                            .style('opacity', 0.9)
+                            .style('opacity', maxOpacity)
                             .on('end', repeat);
                     });
             });
