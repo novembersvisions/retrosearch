@@ -770,6 +770,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -789,6 +790,7 @@
         stroke-width: 2px;
         r: attr(r);
     }
+
     100% {
         stroke-opacity: 0.8;
         stroke-width: 3px;
@@ -802,6 +804,7 @@
         opacity: 1;
         transform: translate(0, 0) scale(1);
     }
+
     100% {
         opacity: 0;
         transform: translate(var(--dx), var(--dy)) scale(0.5);
@@ -814,10 +817,12 @@
         opacity: 0;
         transform: scale(0.2);
     }
+
     50% {
         opacity: 0.7;
         transform: scale(1.1);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -830,6 +835,7 @@
         transform: translateY(-20px);
         opacity: 0;
     }
+
     100% {
         transform: translateY(0);
         opacity: 1;

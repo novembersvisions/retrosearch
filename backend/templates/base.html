@@ -142,7 +142,12 @@
                         if (linkElement) {
                             resultDiv.appendChild(linkElement);
                         }
+                        //citation
+                        const magentaText = document.createElement("div");
+                        magentaText.className = "citation-text";
+                        magentaText.textContent = `Number of citations: ${item.citation_count}`; // Customize this text as needed
 
+                        resultDiv.appendChild(magentaText);
                         // Add result to answer box
                         document.getElementById("answer-box").appendChild(resultDiv);
                     });
@@ -212,6 +217,18 @@
             popupContent.appendChild(footer);
             overlay.appendChild(popupContent);
 
+            //Citation
+            /*
+            const actionButton = document.createElement('button');
+            actionButton.className = 'paper-popup-action-btn';
+            actionButton.textContent = 'Get citation';
+            actionButton.onclick = (e) => {
+                e.stopPropagation();
+                alert(`MLA: [Surname, First initials]. [(Date)] ${paperTitle}.[location].[publisher].${pdfUrl}`);
+            }
+            footer.appendChild(actionButton);
+            */
+
             // 7. Add overlay to document
             document.body.appendChild(overlay);
 
@@ -240,19 +257,19 @@
         function keywordHighlight() {
             const raw = document.getElementById("keyword-search-bar").value.toLowerCase().trim();
             const keywords = raw.split(/[\s,]+/).filter(k => k);
-            
+
             // Reset all items first
             document.querySelectorAll(".result-item").forEach(item => {
                 item.style.borderLeftColor = "#ff3333"; // Reset to default red
                 item.classList.remove("result-item-highlighted");
-                
+
                 // Remove any highlight markers
                 const highlightMarker = item.querySelector(".highlight-marker");
                 if (highlightMarker) {
                     highlightMarker.remove();
                 }
             });
-            
+
             // If no keywords, exit early
             if (keywords.length === 0) return;
 
@@ -269,12 +286,12 @@
                 if (hasAllKeywords) {
                     // Apply the highlighting class
                     item.classList.add("result-item-highlighted");
-                    
+
                     // Create and add the highlight marker
                     const marker = document.createElement("div");
                     marker.className = "highlight-marker";
                     marker.innerHTML = `<span>Matches${keywords.length > 1 ? ' all' : ''} keyword${keywords.length > 1 ? 's' : ''}</span>`;
-                    
+
                     // Insert after the title
                     titleEl.parentNode.insertBefore(marker, titleEl.nextSibling);
                 }

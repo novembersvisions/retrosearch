@@ -252,6 +252,14 @@ body {
     backdrop-filter: blur(5px);
 }
 
+.citation-text {
+    position: absolute;
+    font-family: 'Montserrat', sans-serif;
+    bottom: 29px;
+    right: 29px;
+    color: #bbb;
+}
+
 .error {
     text-align: center;
     padding: 20px;
