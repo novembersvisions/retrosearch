@@ -1143,3 +1143,19 @@
   .paper-popup-favorite {
     padding: 0 5px;
   }
+  
+/* style your hint and pin it 8px below the input */
+.reinforce-hint {
+    position: absolute;
+    justify-content: center;
+    top: 60px;
+    z-index: 1000;
+  
+    /* optional styling to match your theme */
+    background: #e33;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }

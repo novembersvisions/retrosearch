@@ -290,22 +290,21 @@ class MultiClusterMap {
     }
 
     showReinforceHint() {
-
+        // only show once
         if (document.querySelector('.reinforce-hint')) return;
-
+      
         const kwBar = document.getElementById('keyword-search-container');
-        const fallback = 40;
-        const topPx = kwBar && kwBar.offsetParent
-            ? kwBar.getBoundingClientRect().bottom + 8
-            : fallback;
-        d3.select('body')
-            .append('div')
-            .attr('class', 'reinforce-hint')
-            .style('top', `${topPx}px`)
-            .html('Press&nbsp;<b>Shift</b>&nbsp;to activate reinforcement')
-            .transition();
-
-    }
+        if (!kwBar) return;
+      
+        // ensure it's a positioning parent
+        kwBar.style.position = 'relative';
+      
+        // append the hint _inside_ the keyword bar
+        d3.select(kwBar)
+          .append('div')
+          .attr('class', 'reinforce-hint')
+          .html('Press&nbsp;<b>Shift</b>&nbsp;to activate reinforcement');
+      }
 
 
     //--------------------------------------
