@@ -634,6 +634,23 @@
     background-color: #ff5555;
 }
 
+.reinforce-hint {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 18px;
+    background: #ff3333;
+    color: #ffffff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .40);
+    opacity: 0;
+    z-index: 9999;
+    animation: slideInHint .4s forwards;
+}
+
+
 /* Highlight ring around nodes */
 .highlight-ring {
     pointer-events: none;
@@ -770,6 +787,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -789,6 +807,7 @@
         stroke-width: 2px;
         r: attr(r);
     }
+
     100% {
         stroke-opacity: 0.8;
         stroke-width: 3px;
@@ -802,6 +821,7 @@
         opacity: 1;
         transform: translate(0, 0) scale(1);
     }
+
     100% {
         opacity: 0;
         transform: translate(var(--dx), var(--dy)) scale(0.5);
@@ -814,10 +834,12 @@
         opacity: 0;
         transform: scale(0.2);
     }
+
     50% {
         opacity: 0.7;
         transform: scale(1.1);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -830,9 +852,28 @@
         transform: translateY(-20px);
         opacity: 0;
     }
+
     100% {
         transform: translateY(0);
         opacity: 1;
+    }
+}
+
+@keyframes slideInHint {
+    from {
+        transform: translate(-50%, -12px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(-50%, 0);
+        opacity: .94;
+    }
+}
+
+@keyframes fadeOutHint {
+    to {
+        opacity: 0;
     }
 }
 
